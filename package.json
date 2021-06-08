@@ -1,0 +1,25 @@
+{
+  "name": "beacon-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CCExtractor/beacon-backend.git"
+  },
+  "author": "Aadi Bajpai",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CCExtractor/beacon-backend/issues"
+  },
+  "homepage": "https://github.com/CCExtractor/beacon-backend#readme",
+  "dependencies": {
+    "apollo-server-express": "^2.7.0",
+    "dotenv": "^10.0.0",
+    "graphql": "^15.5.0"
+  }
+}
