@@ -1,15 +1,9 @@
-const express = require("express");
-const { ApolloServer } = require("apollo-server-express");
-const { typeDefs } = require("./schema");
+import express from "express";
+import { ApolloServer } from "apollo-server-express";
+import typeDefs from "./schema.js";
+import resolvers from "./resolvers.js";
 
 async function startApolloServer() {
-    // Provide resolver functions for your schema fields
-    const resolvers = {
-        Query: {
-            hello: () => "Hello world!",
-        },
-    };
-
     const server = new ApolloServer({ typeDefs, resolvers });
     await server.start();
 
