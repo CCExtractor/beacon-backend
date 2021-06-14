@@ -28,7 +28,7 @@ const typeDefs = gql`
 
     input BeaconInput {
         title: String
-        leaderID: String!
+        leader: ID!
         startsAt: Float!
         expiresAt: Float!
     }
@@ -44,7 +44,7 @@ const typeDefs = gql`
     input LandmarkInput {
         title: String!
         location: LocationInput!
-        UserID: String!
+        by: ID!
     }
 
     type User {
@@ -67,8 +67,8 @@ const typeDefs = gql`
     }
 
     type Query {
-        beacon(me: String!): Beacon!
-        pastBeacons(me: String!): [Beacon!]!
+        beacon(me: ID!): Beacon!
+        pastBeacons(me: ID!): [Beacon!]!
         me: User
         hello: String
     }
@@ -78,7 +78,7 @@ const typeDefs = gql`
         createLandmark(landmark: LandmarkInput): Landmark!
         register(user: RegistrationInput): User!
         login(email: String!, password: String!): String
-        joinBeacon(shortcode: String!, me: String!): Beacon!
+        joinBeacon(shortcode: String!, me: ID!): Beacon!
     }
 
     schema {
