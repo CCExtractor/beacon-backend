@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node -r dotenv/config index.js"
   },
   "repository": {
     "type": "git",
@@ -20,8 +20,10 @@
   "homepage": "https://github.com/CCExtractor/beacon-backend#readme",
   "dependencies": {
     "apollo-server-express": "^2.7.0",
+    "bcryptjs": "^2.4.3",
     "dotenv": "^10.0.0",
-    "graphql": "^15.5.0"
+    "graphql": "^15.5.0",
+    "mongoose": "^5.12.13"
   },
   "devDependencies": {
     "eslint": "^7.28.0",

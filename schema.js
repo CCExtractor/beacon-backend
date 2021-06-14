@@ -53,17 +53,20 @@ const typeDefs = gql`
         """
         _id: ID!
         createdAt: Float!
-        name: String!
-        email: String!
-        location: Location!
+        """
+        name, email, location optional for anon access
+        """
+        name: String
+        email: String
+        location: Location
         beacons: [Beacon!]!
         landmarks: [Landmark!]!
     }
 
     input RegistrationInput {
         name: String!
-        email: String!
-        password: String!
+        email: String
+        password: String
     }
 
     type Query {
