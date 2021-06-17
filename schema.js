@@ -63,10 +63,14 @@ const typeDefs = gql`
         landmarks: [Landmark!]!
     }
 
+    input AuthPayload {
+        email: String!
+        password: String!
+    }
+
     input RegistrationInput {
         name: String!
-        email: String
-        password: String
+        credentials: AuthPayload
     }
 
     type Query {
@@ -80,7 +84,10 @@ const typeDefs = gql`
         createBeacon(beacon: BeaconInput): Beacon!
         createLandmark(landmark: LandmarkInput): Landmark!
         register(user: RegistrationInput): User!
-        login(email: String!, password: String!): String
+        """
+        one of ID or credentials required (ID for anon)
+        """
+        login(id: ID, credentials: AuthPayload): String
         joinBeacon(shortcode: String!, me: ID!): Beacon!
     }
 
