@@ -1,6 +1,7 @@
 import User from "./models/user.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { AuthenticationError, UserInputError } from "apollo-server-express";
 
 const resolvers = {
     Query: {
@@ -23,7 +24,7 @@ const resolvers = {
         },
 
         login: async (_parent, { id, credentials }) => {
-            if (!id && !credentials) throw new Error("One of ID and credentials required");
+            if (!id && !credentials) throw new UserInputError("One of ID and credentials required");
 
             const { email, password } = credentials || {}; // unpack if available
             const user = id ? await User.findById(id) : await User.findOne({ email });
@@ -31,7 +32,7 @@ const resolvers = {
             if (!user) throw new Error("User not found.");
 
             // prevent third party using id to login when user registered
-            if (user.email && !credentials) throw new Error("Email/password required to login");
+            if (user.email && !credentials) throw new UserInputError("Email/password required to login");
 
             console.log("User logged in: ", user, new Date());
 
@@ -39,10 +40,10 @@ const resolvers = {
 
             if (credentials) {
                 const valid = email === user.email && (await bcrypt.compare(password, user.password));
-                if (!valid) throw new Error("credentials don't match");
+                if (!valid) throw new AuthenticationError("credentials don't match");
                 anon = false;
             }
-            console.log(email);
+
             return jwt.sign(
                 {
                     "https://beacon.ccextractor.org": {
