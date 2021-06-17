@@ -6,6 +6,7 @@ import { AuthenticationError, UserInputError } from "apollo-server-express";
 const resolvers = {
     Query: {
         hello: () => "Hello world!",
+        me: (_parent, _args, { user }) => user,
     },
 
     Mutation: {

@@ -22,6 +22,7 @@
     "apollo-server-express": "^2.7.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^10.0.0",
+    "express-jwt": "^6.0.0",
     "graphql": "^15.5.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.12.13"
