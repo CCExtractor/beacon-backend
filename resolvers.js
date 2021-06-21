@@ -7,6 +7,7 @@ const resolvers = {
     Query: {
         hello: () => "Hello world!",
         me: (_parent, _args, { user }) => user,
+        currentNumber: (_parent, _args, { currentNumber }) => currentNumber,
     },
 
     Mutation: {
@@ -59,6 +60,11 @@ const resolvers = {
                     expiresIn: "7d",
                 }
             );
+        },
+    },
+    Subscription: {
+        testNumberIncremented: {
+            subscribe: (_parent, _args, { pubsub }) => pubsub.asyncIterator(["NUMBER_INCREMENTED"]),
         },
     },
 };

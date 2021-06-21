@@ -78,6 +78,7 @@ const typeDefs = gql`
         pastBeacons(me: ID!): [Beacon!]!
         me: User
         hello: String
+        currentNumber: Int
     }
 
     type Mutation {
@@ -89,6 +90,11 @@ const typeDefs = gql`
         """
         login(id: ID, credentials: AuthPayload): String
         joinBeacon(shortcode: String!, me: ID!): Beacon!
+    }
+
+    type Subscription {
+        leaderLocation: Location
+        testNumberIncremented: Int
     }
 
     schema {
