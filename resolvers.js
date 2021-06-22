@@ -1,4 +1,5 @@
-import User from "./models/user.js";
+import { User } from "./models/user.js";
+
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AuthenticationError, UserInputError } from "apollo-server-express";
@@ -62,6 +63,7 @@ const resolvers = {
             );
         },
     },
+
     Subscription: {
         testNumberIncremented: {
             subscribe: (_parent, _args, { pubsub }) => pubsub.asyncIterator(["NUMBER_INCREMENTED"]),

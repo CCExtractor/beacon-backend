@@ -6,16 +6,16 @@ import mongoose from "mongoose";
 
 import typeDefs from "./schema.js";
 import resolvers from "./resolvers.js";
-import User from "./models/user.js";
+import { User } from "./models/user.js";
 
 const pubsub = new PubSub();
 
 let currentNumber = 0;
-function incrementNumber() {
-    currentNumber++;
-    pubsub.publish("NUMBER_INCREMENTED", { numberIncremented: currentNumber });
-    setTimeout(incrementNumber, 1000);
-}
+// function incrementNumber() {
+//     currentNumber++;
+//     pubsub.publish("NUMBER_INCREMENTED", { numberIncremented: currentNumber });
+//     setTimeout(incrementNumber, 1000);
+// }
 
 const server = new ApolloServer({
     typeDefs,
@@ -26,10 +26,10 @@ const server = new ApolloServer({
     },
     subscriptions: {
         path: "/subscriptions",
-        onConnect: (connectionParams, webSocket, context) => {
+        onConnect: () => {
             console.log("Client connected");
         },
-        onDisconnect: (webSocket, context) => {
+        onDisconnect: () => {
             console.log("Client disconnected");
         },
     },
@@ -67,5 +67,3 @@ mongoose
     .catch(error => {
         throw error;
     });
-
-incrementNumber();

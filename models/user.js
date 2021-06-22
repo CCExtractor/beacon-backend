@@ -4,7 +4,7 @@ import LocationSchema from "./location.js";
 
 const { Schema, model } = mongoose;
 
-const userSchema = new Schema(
+export const UserSchema = new Schema(
     {
         name: String,
         email: String,
@@ -18,4 +18,4 @@ const userSchema = new Schema(
     }
 );
 
-export default model("User", userSchema, "Users"); // specify collection name
+export const User = model("User", UserSchema, "Users"); // specify collection name
