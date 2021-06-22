@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node -r dotenv/config index.js",
-    "lint": "npx prettier -c \"**/*.js\""
+    "lint": "npx prettier -w \"**/*.js\""
   },
   "repository": {
     "type": "git",
