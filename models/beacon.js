@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 import LocationSchema from "./location.js";
-import { UserSchema } from "./user.js";
 
 const { Schema, model } = mongoose;
 
@@ -11,8 +10,8 @@ const beaconSchema = new Schema(
         shortcode: { type: String, required: true },
         startsAt: { type: Date, default: Date.now },
         expiresAt: { type: Date, required: true },
-        leader: { type: [UserSchema], required: true },
-        followers: [UserSchema],
+        leader: { type: mongoose.ObjectId, required: true },
+        followers: [mongoose.ObjectId],
         route: [LocationSchema],
     },
     {

@@ -1,8 +1,15 @@
 import { User } from "./models/user.js";
+import Beacon from "./models/beacon.js";
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AuthenticationError, UserInputError } from "apollo-server-express";
+import { customAlphabet } from "nanoid";
+
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+// even if we generate 10 IDs per hour,
+// ~10 days needed, in order to have a 1% probability of at least one collision.
+const nanoid = customAlphabet(alphabet, 6);
 
 const resolvers = {
     Query: {
@@ -62,11 +69,50 @@ const resolvers = {
                 }
             );
         },
+
+        createBeacon: async (_, args, { user }) => {
+            if (!user) throw new AuthenticationError("Authentication required to create beacon.");
+            const beaconDoc = new Beacon({ leader: user.id, shortcode: nanoid(), ...args });
+            const newBeacon = await beaconDoc.save();
+            return newBeacon;
+        },
+
+        joinBeacon: async (_, { id }, { user }) => {
+            if (!user) throw new AuthenticationError("Authentication required to join beacon.");
+
+            const beacon = await Beacon.findById(id);
+            if (!beacon) throw new UserInputError("No beacon exists with that id.");
+
+            if (beacon.followers.includes(user.id)) throw new Error("Already following the beacon");
+
+            beacon.followers.push(user.id);
+            await beacon.save();
+            return beacon;
+        },
+
+        updateLocation: async (_, { id, location }, { user, pubsub }) => {
+            if (!user) throw new AuthenticationError("Authentication required to join beacon.");
+
+            const beacon = await Beacon.findById(id);
+            if (!beacon) throw new UserInputError("No beacon exists with that id.");
+
+            if (beacon.leader != user.id) throw new Error("Only the beacon leader can update leader location");
+
+            pubsub.publish("LEADER_LOCATION", { leaderLocation: location });
+
+            user.location.push(location);
+            await user.save();
+
+            return location;
+        },
     },
 
     Subscription: {
         testNumberIncremented: {
             subscribe: (_parent, _args, { pubsub }) => pubsub.asyncIterator(["NUMBER_INCREMENTED"]),
+        },
+        leaderLocation: {
+            subscribe: (_, __, { pubsub }) => pubsub.asyncIterator(["LEADER_LOCATION"]),
         },
     },
 };

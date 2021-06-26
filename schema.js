@@ -17,6 +17,7 @@ const typeDefs = gql`
         shortcode: String!
         createdAt: Float!
         updatedAt: Float!
+        startsAt: Float!
         expiresAt: Float!
         """
         N beacons case: multiple leaders
@@ -82,6 +83,9 @@ const typeDefs = gql`
     }
 
     type Mutation {
+        """
+        if start time not supplied, default is Date.now
+        """
         createBeacon(beacon: BeaconInput): Beacon!
         createLandmark(landmark: LandmarkInput): Landmark!
         register(user: RegistrationInput): User!
@@ -89,8 +93,8 @@ const typeDefs = gql`
         one of ID or credentials required (ID for anon)
         """
         login(id: ID, credentials: AuthPayload): String
-        joinBeacon(shortcode: String!, me: ID!): Beacon!
-        updateLocation(location: LocationInput!): Location!
+        joinBeacon(id: ID!): Beacon!
+        updateLocation(id: ID!, location: LocationInput!): Location!
     }
 
     type Subscription {
