@@ -21,9 +21,10 @@ const typeDefs = gql`
         expiresAt: Float!
         """
         N beacons case: multiple leaders
+        leader: [ID!]!
         """
-        leader: [User!]!
-        followers: [User!]!
+        leader: ID!
+        followers: [ID!]!
         route: [Location!]!
     }
 
