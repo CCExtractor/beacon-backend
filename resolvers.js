@@ -70,9 +70,10 @@ const resolvers = {
             );
         },
 
-        createBeacon: async (_, args, { user }) => {
+        createBeacon: async (_, { beacon }, { user }) => {
             if (!user) throw new AuthenticationError("Authentication required to create beacon.");
-            const beaconDoc = new Beacon({ leader: user.id, shortcode: nanoid(), ...args });
+            console.log(beacon);
+            const beaconDoc = new Beacon({ leader: user.id, shortcode: nanoid(), ...beacon });
             const newBeacon = await beaconDoc.save();
             return newBeacon;
         },

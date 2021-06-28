@@ -30,7 +30,6 @@ const typeDefs = gql`
 
     input BeaconInput {
         title: String
-        leader: ID!
         startsAt: Float!
         expiresAt: Float!
     }
