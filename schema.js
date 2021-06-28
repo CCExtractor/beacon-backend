@@ -30,7 +30,10 @@ const typeDefs = gql`
 
     input BeaconInput {
         title: String
-        startsAt: Float!
+        """
+        default is Date.now
+        """
+        startsAt: Float
         expiresAt: Float!
     }
 
