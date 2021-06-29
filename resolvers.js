@@ -21,6 +21,11 @@ const resolvers = {
     Mutation: {
         register: async (_parent, { user }) => {
             const { name, credentials } = user;
+
+            // check if user already exists 
+            if (credentials && (await User.find({ email: credentials.email })))
+                throw new UserInputError("User with email already registered.");
+
             const newUser = new User({
                 name,
                 // add email and password only if credentials exist
