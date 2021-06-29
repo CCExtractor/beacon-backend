@@ -73,7 +73,7 @@ const resolvers = {
         createBeacon: async (_, { beacon }, { user }) => {
             if (!user) throw new AuthenticationError("Authentication required to create beacon.");
             console.log(beacon);
-            const beaconDoc = new Beacon({ leader: user.id, shortcode: nanoid(), ...beacon });
+            const beaconDoc = new Beacon({ leader: user, shortcode: nanoid(), ...beacon });
             const newBeacon = await beaconDoc.save();
             return newBeacon;
         },
@@ -84,9 +84,9 @@ const resolvers = {
             const beacon = await Beacon.findById(id);
             if (!beacon) throw new UserInputError("No beacon exists with that id.");
 
-            if (beacon.followers.includes(user.id)) throw new Error("Already following the beacon");
+            if (beacon.followers.includes(user)) throw new Error("Already following the beacon");
 
-            beacon.followers.push(user.id);
+            beacon.followers.push(user);
             await beacon.save();
             return beacon;
         },
