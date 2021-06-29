@@ -23,8 +23,8 @@ const typeDefs = gql`
         N beacons case: multiple leaders
         leader: [ID!]!
         """
-        leader: ID!
-        followers: [ID!]!
+        leader: User!
+        followers: [User!]!
         route: [Location!]!
     }
 

@@ -1,10 +1,11 @@
-import { User } from "./models/user.js";
-import Beacon from "./models/beacon.js";
-
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AuthenticationError, UserInputError } from "apollo-server-express";
 import { customAlphabet } from "nanoid";
+
+import { User } from "./models/user.js";
+import Beacon from "./models/beacon.js";
+import { addUserToBeacon } from "./utils.js";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -22,7 +23,7 @@ const resolvers = {
         register: async (_parent, { user }) => {
             const { name, credentials } = user;
 
-            // check if user already exists 
+            // check if user already exists
             if (credentials && (await User.find({ email: credentials.email })))
                 throw new UserInputError("User with email already registered.");
 
@@ -84,16 +85,8 @@ const resolvers = {
         },
 
         joinBeacon: async (_, { id }, { user }) => {
-            if (!user) throw new AuthenticationError("Authentication required to join beacon.");
-
             const beacon = await Beacon.findById(id);
-            if (!beacon) throw new UserInputError("No beacon exists with that id.");
-
-            if (beacon.followers.includes(user)) throw new Error("Already following the beacon");
-
-            beacon.followers.push(user);
-            await beacon.save();
-            return beacon;
+            return addUserToBeacon(user, beacon);
         },
 
         updateLocation: async (_, { id, location }, { user, pubsub }) => {

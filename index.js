@@ -7,6 +7,8 @@ import mongoose from "mongoose";
 import typeDefs from "./schema.js";
 import resolvers from "./resolvers.js";
 import { User } from "./models/user.js";
+import Beacon from "./models/beacon.js";
+import { addUserToBeacon } from "./utils.js";
 
 const pubsub = new PubSub();
 
@@ -37,8 +39,6 @@ const server = new ApolloServer({
 
 const app = express();
 
-app.get("/", (req, res) => res.send("Hello World! This is a GraphQL API. Check out /graphql"));
-
 app.use(
     expressJWT({
         secret: process.env.JWT_SECRET,
@@ -46,6 +46,16 @@ app.use(
         credentialsRequired: false,
     })
 );
+
+app.get("/", (req, res) => res.send("Hello World! This is a GraphQL API. Check out /graphql"));
+
+app.get("/j/:shortcode", async (req, res) => {
+    const { user } = req;
+    const { shortcode } = req.params;
+    const beacon = Beacon.findOne({ shortcode });
+
+    res.send(await addUserToBeacon(user, beacon));
+});
 
 server.applyMiddleware({ app });
 const httpServer = http.createServer(app);
