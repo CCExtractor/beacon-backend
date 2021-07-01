@@ -95,7 +95,7 @@ const resolvers = {
             const beacon = await Beacon.findById(id);
             if (!beacon) throw new UserInputError("No beacon exists with that id.");
 
-            if (beacon.leader != user.id) throw new Error("Only the beacon leader can update leader location");
+            if (beacon.leader.id != user.id) throw new Error("Only the beacon leader can update leader location");
 
             pubsub.publish("LEADER_LOCATION", { leaderLocation: location });
 
