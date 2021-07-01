@@ -96,7 +96,7 @@ const typeDefs = gql`
         one of ID or credentials required (ID for anon)
         """
         login(id: ID, credentials: AuthPayload): String
-        joinBeacon(id: ID!): Beacon!
+        joinBeacon(shortcode: String!): Beacon!
         updateLocation(id: ID!, location: LocationInput!): Location!
     }
 

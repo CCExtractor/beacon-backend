@@ -7,7 +7,6 @@ import mongoose from "mongoose";
 import typeDefs from "./schema.js";
 import resolvers from "./resolvers.js";
 import { User } from "./models/user.js";
-import Beacon from "./models/beacon.js";
 import { addUserToBeacon } from "./utils.js";
 
 const pubsub = new PubSub();
@@ -51,10 +50,12 @@ app.get("/", (req, res) => res.send("Hello World! This is a GraphQL API. Check o
 
 app.get("/j/:shortcode", async (req, res) => {
     const { user } = req;
+    console.log(`shortcode route hit by ${user.id}`);
     const { shortcode } = req.params;
-    const beacon = Beacon.findOne({ shortcode });
 
-    res.send(await addUserToBeacon(user, beacon));
+    const beacon = await addUserToBeacon(user, shortcode);
+    if (beacon) res.send("Added user to beacon successfully.");
+    else res.sendStatus(500);
 });
 
 server.applyMiddleware({ app });

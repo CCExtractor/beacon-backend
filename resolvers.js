@@ -84,9 +84,8 @@ const resolvers = {
             return newBeacon;
         },
 
-        joinBeacon: async (_, { id }, { user }) => {
-            const beacon = await Beacon.findById(id);
-            return addUserToBeacon(user, beacon);
+        joinBeacon: async (_, { shortcode }, { user }) => {
+            return addUserToBeacon(user, shortcode);
         },
 
         updateLocation: async (_, { id, location }, { user, pubsub }) => {
