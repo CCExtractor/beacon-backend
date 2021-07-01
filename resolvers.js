@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { AuthenticationError, UserInputError } from "apollo-server-express";
+import { withFilter, AuthenticationError, UserInputError } from "apollo-server-express";
 import { customAlphabet } from "nanoid";
 
 import { User } from "./models/user.js";
@@ -96,7 +96,7 @@ const resolvers = {
 
             if (beacon.leader.id != user.id) throw new Error("Only the beacon leader can update leader location");
 
-            pubsub.publish("LEADER_LOCATION", { leaderLocation: location });
+            pubsub.publish("LEADER_LOCATION", { leaderLocation: location, beaconID: beacon.id });
 
             user.location.push(location);
             await user.save();
@@ -110,7 +110,10 @@ const resolvers = {
             subscribe: (_parent, _args, { pubsub }) => pubsub.asyncIterator(["NUMBER_INCREMENTED"]),
         },
         leaderLocation: {
-            subscribe: (_, __, { pubsub }) => pubsub.asyncIterator(["LEADER_LOCATION"]),
+            subscribe: withFilter(
+                (_, __, { pubsub }) => pubsub.asyncIterator(["LEADER_LOCATION"]),
+                (payload, variables) => payload.beaconID === variables.id
+            ),
         },
     },
 };

@@ -101,7 +101,7 @@ const typeDefs = gql`
     }
 
     type Subscription {
-        leaderLocation: Location
+        leaderLocation(id: ID!): Location
         testNumberIncremented: Int
     }
 
