@@ -96,7 +96,8 @@ const resolvers = {
 
             if (beacon.leader.id != user.id) throw new Error("Only the beacon leader can update leader location");
 
-            pubsub.publish("LEADER_LOCATION", { leaderLocation: location, beaconID: beacon.id });
+            // beacon id used for filtering but only location sent to user bc schema
+            pubsub.publish("BEACON_LOCATION", { beaconLocation: location, beaconID: beacon.id });
 
             user.location.push(location);
             await user.save();
@@ -109,9 +110,9 @@ const resolvers = {
         testNumberIncremented: {
             subscribe: (_parent, _args, { pubsub }) => pubsub.asyncIterator(["NUMBER_INCREMENTED"]),
         },
-        leaderLocation: {
+        beaconLocation: {
             subscribe: withFilter(
-                (_, __, { pubsub }) => pubsub.asyncIterator(["LEADER_LOCATION"]),
+                (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
                 (payload, variables) => payload.beaconID === variables.id
             ),
         },

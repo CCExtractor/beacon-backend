@@ -101,7 +101,7 @@ const typeDefs = gql`
     }
 
     type Subscription {
-        leaderLocation(id: ID!): Location
+        beaconLocation(id: ID!): Location
         testNumberIncremented: Int
     }
 
