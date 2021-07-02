@@ -3,12 +3,12 @@ import Beacon from "./models/beacon.js";
 
 export const addUserToBeacon = async (user, shortcode) => {
     if (!user) throw new AuthenticationError("Authentication required to join beacon.");
-    const beacon = await Beacon.findOne({ shortcode }).populate("leader");
+    const beacon = await Beacon.findOne({ shortcode });
     if (!beacon) throw new UserInputError("No beacon exists with that shortcode.");
     if (beacon.followers.includes(user)) throw new Error("Already following the beacon");
 
     beacon.followers.push(user);
-    await beacon.save();
+    await beacon.save().then(b => b.populate("leader").execPopulate());
 
     return beacon;
 };
