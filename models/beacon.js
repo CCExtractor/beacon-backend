@@ -11,7 +11,7 @@ const beaconSchema = new Schema(
         shortcode: { type: String, required: true },
         startsAt: { type: Date, default: Date.now },
         expiresAt: { type: Date, required: true },
-        leader: { type: UserSchema, required: true },
+        leader: { type: Schema.Types.ObjectId, required: true, ref: "User" },
         followers: [UserSchema],
         route: [LocationSchema],
     },

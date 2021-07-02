@@ -79,8 +79,8 @@ const resolvers = {
         createBeacon: async (_, { beacon }, { user }) => {
             if (!user) throw new AuthenticationError("Authentication required to create beacon.");
             console.log(beacon);
-            const beaconDoc = new Beacon({ leader: user, shortcode: nanoid(), ...beacon });
-            const newBeacon = await beaconDoc.save();
+            const beaconDoc = new Beacon({ leader: user.id, shortcode: nanoid(), ...beacon });
+            const newBeacon = await beaconDoc.save().then(b => b.populate("leader").execPopulate());
             return newBeacon;
         },
 

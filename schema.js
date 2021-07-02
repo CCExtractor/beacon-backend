@@ -102,6 +102,7 @@ const typeDefs = gql`
 
     type Subscription {
         beaconLocation(id: ID!): Location
+        beaconJoined(id: ID!): User!
         testNumberIncremented: Int
     }
 
