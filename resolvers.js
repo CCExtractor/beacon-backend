@@ -5,7 +5,6 @@ import { customAlphabet } from "nanoid";
 
 import { User } from "./models/user.js";
 import Beacon from "./models/beacon.js";
-import { addUserToBeacon } from "./utils.js";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -24,7 +23,7 @@ const resolvers = {
             const { name, credentials } = user;
 
             // check if user already exists
-            if (credentials && (await User.find({ email: credentials.email })))
+            if (credentials && (await User.findOne({ email: credentials.email })) !== null)
                 throw new UserInputError("User with email already registered.");
 
             const newUser = new User({
@@ -84,8 +83,22 @@ const resolvers = {
             return newBeacon;
         },
 
-        joinBeacon: async (_, { shortcode }, { user }) => {
-            return addUserToBeacon(user, shortcode);
+        joinBeacon: async (_, { shortcode }, { user, pubsub }) => {
+            if (!user) throw new AuthenticationError("Authentication required to join beacon.");
+
+            const beacon = await Beacon.findOne({ shortcode });
+
+            if (!beacon) throw new UserInputError("No beacon exists with that shortcode.");
+            if (beacon.followers.includes(user)) throw new Error("Already following the beacon");
+
+            beacon.followers.push(user);
+            await beacon.save().then(b => b.populate("leader").execPopulate());
+            pubsub.publish("BEACON_JOINED", { beaconFollower: user, leaderID: beacon.leader.id });
+
+            user.beacons.push(beacon.id);
+            await user.save();
+
+            return beacon;
         },
 
         updateLocation: async (_, { id, location }, { user, pubsub }) => {
@@ -114,6 +127,12 @@ const resolvers = {
             subscribe: withFilter(
                 (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
                 (payload, variables) => payload.beaconID === variables.id
+            ),
+        },
+        beaconJoined: {
+            subscribe: withFilter(
+                (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_JOINED"]),
+                (payload, variables) => payload.leaderID === variables.id
             ),
         },
     },

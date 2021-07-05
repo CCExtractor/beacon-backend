@@ -10,7 +10,7 @@ export const UserSchema = new Schema(
         email: String,
         password: String,
         location: [LocationSchema],
-        beacons: [String], // change to BeaconSchema later
+        beacons: { type: [Schema.Types.ObjectId], ref: "Beacon" },
         landmarks: [String], // change to LandmarkSchema later
     },
     {

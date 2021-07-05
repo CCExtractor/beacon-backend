@@ -7,7 +7,6 @@ import mongoose from "mongoose";
 import typeDefs from "./schema.js";
 import resolvers from "./resolvers.js";
 import { User } from "./models/user.js";
-import { addUserToBeacon } from "./utils.js";
 
 const pubsub = new PubSub();
 
@@ -22,7 +21,7 @@ const server = new ApolloServer({
     typeDefs,
     resolvers,
     context: async ({ req }) => {
-        const user = req && req.user ? await User.findById(req.user.sub) : null;
+        const user = req && req.user ? await User.findById(req.user.sub).populate("beacons") : null;
         return { user, pubsub, currentNumber };
     },
     subscriptions: {
@@ -51,11 +50,7 @@ app.get("/", (req, res) => res.send("Hello World! This is a GraphQL API. Check o
 app.get("/j/:shortcode", async (req, res) => {
     const { user } = req;
     console.log(`shortcode route hit by ${user.id}`);
-    const { shortcode } = req.params;
-
-    const beacon = await addUserToBeacon(user, shortcode);
-    if (beacon) res.send("Added user to beacon successfully.");
-    else res.sendStatus(500);
+    res.send("this should open in the app eventually");
 });
 
 server.applyMiddleware({ app });
