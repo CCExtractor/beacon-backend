@@ -98,6 +98,7 @@ const typeDefs = gql`
         login(id: ID, credentials: AuthPayload): String
         joinBeacon(shortcode: String!): Beacon!
         updateLocation(id: ID!, location: LocationInput!): Location!
+        changeLeader(beaconID: ID!, newLeaderID: ID!): Beacon!
     }
 
     type Subscription {

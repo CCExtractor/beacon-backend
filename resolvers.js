@@ -122,6 +122,20 @@ const resolvers = {
 
             return location;
         },
+
+        changeLeader: async (_, { beaconID, newLeaderID }, { user }) => {
+            if (!user) throw new AuthenticationError("Authentication required to join beacon.");
+
+            const beacon = await Beacon.findById(beaconID);
+            if (!beacon) throw new UserInputError("No beacon exists with that id.");
+
+            if (beacon.leader != user.id) throw new Error("Only the beacon leader can update leader");
+
+            beacon.leader = newLeaderID;
+            await beacon.save();
+
+            return beacon;
+        },
     },
 
     Subscription: {
