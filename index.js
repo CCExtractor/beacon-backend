@@ -47,9 +47,8 @@ app.use(
 
 app.get("/", (req, res) => res.send("Hello World! This is a GraphQL API. Check out /graphql"));
 
-app.get("/j/:shortcode", async (req, res) => {
-    const { user } = req;
-    console.log(`shortcode route hit by ${user.id}`);
+app.get("/j/:shortcode", async (_req, res) => {
+    console.log(`shortcode route hit`);
     res.send("this should open in the app eventually");
 });
 
