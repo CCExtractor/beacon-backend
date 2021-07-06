@@ -78,11 +78,9 @@ const typeDefs = gql`
     }
 
     type Query {
-        beacon(me: ID!): Beacon!
-        pastBeacons(me: ID!): [Beacon!]!
+        beacon(id: ID!): Beacon!
         me: User
         hello: String
-        currentNumber: Int
     }
 
     type Mutation {
@@ -104,7 +102,6 @@ const typeDefs = gql`
     type Subscription {
         beaconLocation(id: ID!): Location
         beaconJoined(id: ID!): User!
-        testNumberIncremented: Int
     }
 
     schema {

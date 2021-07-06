@@ -15,7 +15,14 @@ const resolvers = {
     Query: {
         hello: () => "Hello world!",
         me: (_parent, _args, { user }) => user,
-        currentNumber: (_parent, _args, { currentNumber }) => currentNumber,
+        beacon: async (_parent, { id }, { user }) => {
+            const beacon = await Beacon.findById(id);
+            if (!beacon) throw new UserInputError("No beacon exists with that id.");
+            // return beacon iff user in beacon
+            if (beacon.leader === user.id || beacon.followers.includes(user))
+                throw new Error("User should be a part of beacon");
+            return beacon;
+        },
     },
 
     Mutation: {
@@ -139,9 +146,6 @@ const resolvers = {
     },
 
     Subscription: {
-        testNumberIncremented: {
-            subscribe: (_parent, _args, { pubsub }) => pubsub.asyncIterator(["NUMBER_INCREMENTED"]),
-        },
         beaconLocation: {
             subscribe: withFilter(
                 (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
