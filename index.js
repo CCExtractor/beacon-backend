@@ -15,7 +15,7 @@ const server = new ApolloServer({
     resolvers,
     context: async ({ req }) => {
         const user = req && req.user ? await User.findById(req.user.sub).populate("beacons") : null;
-        return { user, pubsub};
+        return { user, pubsub };
     },
     subscriptions: {
         path: "/subscriptions",
