@@ -62,7 +62,7 @@ const typeDefs = gql`
         """
         name: String
         email: String
-        location: [Location]
+        location: Location
         beacons: [Beacon!]!
         landmarks: [Landmark!]!
     }

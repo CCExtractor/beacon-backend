@@ -124,7 +124,7 @@ const resolvers = {
             // beacon id used for filtering but only location sent to user bc schema
             pubsub.publish("BEACON_LOCATION", { beaconLocation: location, beaconID: beacon.id });
 
-            user.location.push(location);
+            user.location = location;
             await user.save();
 
             return location;
