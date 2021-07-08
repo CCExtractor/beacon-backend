@@ -10,19 +10,12 @@ import { User } from "./models/user.js";
 
 const pubsub = new PubSub();
 
-let currentNumber = 0;
-// function incrementNumber() {
-//     currentNumber++;
-//     pubsub.publish("NUMBER_INCREMENTED", { numberIncremented: currentNumber });
-//     setTimeout(incrementNumber, 1000);
-// }
-
 const server = new ApolloServer({
     typeDefs,
     resolvers,
     context: async ({ req }) => {
         const user = req && req.user ? await User.findById(req.user.sub).populate("beacons") : null;
-        return { user, pubsub, currentNumber };
+        return { user, pubsub};
     },
     subscriptions: {
         path: "/subscriptions",
