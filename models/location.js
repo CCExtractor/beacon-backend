@@ -4,8 +4,8 @@ const { Schema } = mongoose;
 
 const locationSchema = new Schema(
     {
-        lat: { type: String, required: true },
-        lon: { type: String, required: true },
+        lat: String,
+        lon: String,
     },
     {
         timestamps: true,
