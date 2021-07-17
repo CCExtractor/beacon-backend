@@ -1,10 +1,10 @@
+import { AuthenticationError, UserInputError, withFilter } from "apollo-server-express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { withFilter, AuthenticationError, UserInputError } from "apollo-server-express";
 import { customAlphabet } from "nanoid";
-
-import { User } from "./models/user.js";
-import Beacon from "./models/beacon.js";
+import Beacon from "../models/beacon.js";
+import Landmark from "../models/landmark.js";
+import { User } from "../models/user.js";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -111,6 +111,17 @@ const resolvers = {
             await user.save();
 
             return beacon;
+        },
+
+        createLandmark: async (_, { landmark }, { user }) => {
+            if (!user) throw new AuthenticationError("Authentication required to create landmark.");
+            const newLandmark = new Landmark({ createdBy: user.id, ...landmark });
+            await newLandmark.save();
+
+            user.landmarks.push(newLandmark.id);
+            await user.save();
+
+            return newLandmark;
         },
 
         updateLocation: async (_, { id, location }, { user, pubsub }) => {

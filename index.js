@@ -4,8 +4,8 @@ import expressJWT from "express-jwt";
 import { ApolloServer, PubSub } from "apollo-server-express";
 import mongoose from "mongoose";
 
-import typeDefs from "./schema.js";
-import resolvers from "./resolvers.js";
+import typeDefs from "./graphql/schema.js";
+import resolvers from "./graphql/resolvers.js";
 import { User } from "./models/user.js";
 
 const pubsub = new PubSub();

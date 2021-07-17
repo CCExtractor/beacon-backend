@@ -42,13 +42,12 @@ const typeDefs = gql`
         createdAt: Float!
         title: String!
         location: Location!
-        by: User!
+        createdBy: User!
     }
 
     input LandmarkInput {
         title: String!
         location: LocationInput!
-        by: ID!
     }
 
     type User {
