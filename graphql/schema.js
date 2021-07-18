@@ -26,6 +26,7 @@ const typeDefs = gql`
         leader: User!
         followers: [User!]!
         route: [Location!]!
+        landmarks: [Landmark!]!
     }
 
     input BeaconInput {
@@ -63,7 +64,6 @@ const typeDefs = gql`
         email: String
         location: Location
         beacons: [Beacon!]!
-        landmarks: [Landmark!]!
     }
 
     input AuthPayload {
@@ -87,7 +87,7 @@ const typeDefs = gql`
         if start time not supplied, default is Date.now
         """
         createBeacon(beacon: BeaconInput): Beacon!
-        createLandmark(landmark: LandmarkInput): Landmark!
+        createLandmark(landmark: LandmarkInput, beaconID: ID!): Landmark!
         register(user: RegistrationInput): User!
         """
         one of ID or credentials required (ID for anon)

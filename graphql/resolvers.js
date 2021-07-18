@@ -113,13 +113,16 @@ const resolvers = {
             return beacon;
         },
 
-        createLandmark: async (_, { landmark }, { user }) => {
+        createLandmark: async (_, { landmark, beaconID }, { user }) => {
             if (!user) throw new AuthenticationError("Authentication required to create landmark.");
+            const beacon = await Beacon.findById(beaconID);
+            if (!beacon || !beacon.followers.includes(user.id) || beacon.leader !== user.id)
+                throw new UserInputError("User should be part of beacon.");
             const newLandmark = new Landmark({ createdBy: user.id, ...landmark });
             await newLandmark.save();
 
-            user.landmarks.push(newLandmark.id);
-            await user.save();
+            beacon.landmarks.push(newLandmark.id);
+            await beacon.save();
 
             return newLandmark;
         },
