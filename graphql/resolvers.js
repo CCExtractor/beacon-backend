@@ -104,8 +104,9 @@ const resolvers = {
             if (beacon.followers.includes(user)) throw new Error("Already following the beacon");
 
             beacon.followers.push(user);
+            console.log(user);
             await beacon.save().then(b => b.populate("leader").execPopulate());
-            pubsub.publish("BEACON_JOINED", { beaconFollower: user, leaderID: beacon.leader.id });
+            pubsub.publish("BEACON_JOINED", { beaconFollower: user, beaconID: beacon.id });
 
             user.beacons.push(beacon.id);
             await user.save();
@@ -169,7 +170,7 @@ const resolvers = {
         beaconJoined: {
             subscribe: withFilter(
                 (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_JOINED"]),
-                (payload, variables) => payload.leaderID === variables.id
+                (payload, variables) => payload.beaconID === variables.id
             ),
         },
     },
