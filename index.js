@@ -16,7 +16,7 @@ const pubsub = new PubSub();
 const server = new ApolloServer({
     schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
     context: async ({ req }) => {
-        const user = req && req.user ? await User.findById(req.user.sub).populate("beacons") : null;
+        const user = req?.user ? await User.findById(req.user.sub).populate("beacons") : null;
         return { user, pubsub };
     },
     subscriptions: {
