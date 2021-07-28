@@ -2,17 +2,19 @@ import http from "http";
 import express from "express";
 import expressJWT from "express-jwt";
 import { ApolloServer, PubSub } from "apollo-server-express";
+import { applyMiddleware } from "graphql-middleware";
+import { makeExecutableSchema } from "graphql-tools";
 import mongoose from "mongoose";
 
 import typeDefs from "./graphql/schema.js";
 import resolvers from "./graphql/resolvers.js";
 import { User } from "./models/user.js";
+import { permissions } from "./permissions/index.js";
 
 const pubsub = new PubSub();
 
 const server = new ApolloServer({
-    typeDefs,
-    resolvers,
+    schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
     context: async ({ req }) => {
         const user = req && req.user ? await User.findById(req.user.sub).populate("beacons") : null;
         return { user, pubsub };

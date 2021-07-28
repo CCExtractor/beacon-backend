@@ -17,10 +17,10 @@ const resolvers = {
         me: (_parent, _args, { user }) => user.populate("landmarks"),
         beacon: async (_parent, { id }, { user }) => {
             const beacon = await Beacon.findById(id);
-            if (!beacon) throw new UserInputError("No beacon exists with that id.");
+            if (!beacon) return new UserInputError("No beacon exists with that id.");
             // return beacon iff user in beacon
             if (beacon.leader === user.id || beacon.followers.includes(user))
-                throw new Error("User should be a part of beacon");
+                return new Error("User should be a part of beacon");
             return beacon;
         },
     },
@@ -31,7 +31,7 @@ const resolvers = {
 
             // check if user already exists
             if (credentials && (await User.findOne({ email: credentials.email })) !== null)
-                throw new UserInputError("User with email already registered.");
+                return new UserInputError("User with email already registered.");
 
             const newUser = new User({
                 name,
@@ -46,15 +46,15 @@ const resolvers = {
         },
 
         login: async (_parent, { id, credentials }) => {
-            if (!id && !credentials) throw new UserInputError("One of ID and credentials required");
+            if (!id && !credentials) return new UserInputError("One of ID and credentials required");
 
             const { email, password } = credentials || {}; // unpack if available
             const user = id ? await User.findById(id) : await User.findOne({ email });
 
-            if (!user) throw new Error("User not found.");
+            if (!user) return new Error("User not found.");
 
             // prevent third party using id to login when user registered
-            if (user.email && !credentials) throw new UserInputError("Email/password required to login");
+            if (user.email && !credentials) return new UserInputError("Email/password required to login");
 
             console.log("User logged in: ", user, new Date());
 
@@ -62,7 +62,7 @@ const resolvers = {
 
             if (credentials) {
                 const valid = email === user.email && (await bcrypt.compare(password, user.password));
-                if (!valid) throw new AuthenticationError("credentials don't match");
+                if (!valid) return new AuthenticationError("credentials don't match");
                 anon = false;
             }
 
@@ -83,7 +83,6 @@ const resolvers = {
         },
 
         createBeacon: async (_, { beacon }, { user }) => {
-            if (!user) throw new AuthenticationError("Authentication required to create beacon.");
             console.log(beacon);
 
             const beaconDoc = new Beacon({ leader: user.id, shortcode: nanoid(), ...beacon });
@@ -96,12 +95,10 @@ const resolvers = {
         },
 
         joinBeacon: async (_, { shortcode }, { user, pubsub }) => {
-            if (!user) throw new AuthenticationError("Authentication required to join beacon.");
-
             const beacon = await Beacon.findOne({ shortcode });
 
-            if (!beacon) throw new UserInputError("No beacon exists with that shortcode.");
-            if (beacon.followers.includes(user)) throw new Error("Already following the beacon");
+            if (!beacon) return new UserInputError("No beacon exists with that shortcode.");
+            if (beacon.followers.includes(user)) return new Error("Already following the beacon");
 
             beacon.followers.push(user);
             console.log(user);
@@ -115,10 +112,9 @@ const resolvers = {
         },
 
         createLandmark: async (_, { landmark, beaconID }, { user }) => {
-            if (!user) throw new AuthenticationError("Authentication required to create landmark.");
             const beacon = await Beacon.findById(beaconID);
             if (!beacon || !beacon.followers.includes(user.id) || beacon.leader !== user.id)
-                throw new UserInputError("User should be part of beacon.");
+                return new UserInputError("User should be part of beacon.");
             const newLandmark = new Landmark({ createdBy: user.id, ...landmark });
             await newLandmark.save();
 
@@ -129,12 +125,10 @@ const resolvers = {
         },
 
         updateLocation: async (_, { id, location }, { user, pubsub }) => {
-            if (!user) throw new AuthenticationError("Authentication required to join beacon.");
-
             const beacon = await Beacon.findById(id).populate("leader");
-            if (!beacon) throw new UserInputError("No beacon exists with that id.");
+            if (!beacon) return new UserInputError("No beacon exists with that id.");
 
-            if (beacon.leader.id !== user.id) throw new Error("Only the beacon leader can update leader location");
+            if (beacon.leader.id !== user.id) return new Error("Only the beacon leader can update leader location");
 
             // beacon id used for filtering but only location sent to user bc schema
             pubsub.publish("BEACON_LOCATION", { beaconLocation: location, beaconID: beacon.id });
@@ -146,12 +140,10 @@ const resolvers = {
         },
 
         changeLeader: async (_, { beaconID, newLeaderID }, { user }) => {
-            if (!user) throw new AuthenticationError("Authentication required to join beacon.");
-
             const beacon = await Beacon.findById(beaconID);
-            if (!beacon) throw new UserInputError("No beacon exists with that id.");
+            if (!beacon) return new UserInputError("No beacon exists with that id.");
 
-            if (beacon.leader != user.id) throw new Error("Only the beacon leader can update leader");
+            if (beacon.leader != user.id) return new Error("Only the beacon leader can update leader");
 
             beacon.leader = newLeaderID;
             await beacon.save();
