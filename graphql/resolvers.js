@@ -85,7 +85,12 @@ const resolvers = {
         createBeacon: async (_, { beacon }, { user }) => {
             console.log(beacon);
 
-            const beaconDoc = new Beacon({ leader: user.id, shortcode: nanoid(), ...beacon });
+            const beaconDoc = new Beacon({
+                leader: user.id,
+                shortcode: nanoid(),
+                location: beacon.startLocation,
+                ...beacon,
+            });
             const newBeacon = await beaconDoc.save().then(b => b.populate("leader").execPopulate());
 
             user.beacons.push(newBeacon.id);
@@ -128,15 +133,15 @@ const resolvers = {
             const beacon = await Beacon.findById(id).populate("leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
 
-            if (beacon.leader.id !== user.id) return new Error("Only the beacon leader can update leader location");
+            if (beacon.leader.id !== user.id) return new Error("Only the beacon leader can update beacon location");
 
             // beacon id used for filtering but only location sent to user bc schema
             pubsub.publish("BEACON_LOCATION", { beaconLocation: location, beaconID: beacon.id });
 
-            user.location = location;
-            await user.save();
+            beacon.location = location;
+            await beacon.save();
 
-            return location;
+            return beacon;
         },
 
         changeLeader: async (_, { beaconID, newLeaderID }, { user }) => {

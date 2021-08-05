@@ -20,6 +20,10 @@ const typeDefs = gql`
         startsAt: Float!
         expiresAt: Float!
         """
+        most recent location
+        """
+        location: Location!
+        """
         N beacons case: multiple leaders
         leader: [ID!]!
         """
@@ -36,6 +40,7 @@ const typeDefs = gql`
         """
         startsAt: Float
         expiresAt: Float!
+        startLocation: Location!
     }
 
     type Landmark {
@@ -94,7 +99,8 @@ const typeDefs = gql`
         """
         login(id: ID, credentials: AuthPayload): String
         joinBeacon(shortcode: String!): Beacon!
-        updateLocation(id: ID!, location: LocationInput!): Location!
+        updateBeaconLocation(id: ID!, location: LocationInput!): Beacon!
+        updateUserLocation(id: ID!, location: LocationInput!): User!
         changeLeader(beaconID: ID!, newLeaderID: ID!): Beacon!
     }
 
