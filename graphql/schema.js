@@ -40,7 +40,7 @@ const typeDefs = gql`
         """
         startsAt: Float
         expiresAt: Float!
-        startLocation: Location!
+        startLocation: LocationInput!
     }
 
     type Landmark {
