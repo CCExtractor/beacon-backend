@@ -129,7 +129,7 @@ const resolvers = {
             return newLandmark;
         },
 
-        updateLocation: async (_, { id, location }, { user, pubsub }) => {
+        updateBeaconLocation: async (_, { id, location }, { user, pubsub }) => {
             const beacon = await Beacon.findById(id).populate("leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
 
