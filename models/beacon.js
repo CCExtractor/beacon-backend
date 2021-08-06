@@ -12,6 +12,7 @@ const beaconSchema = new Schema(
         startsAt: { type: Date, default: Date.now },
         expiresAt: { type: Date, required: true },
         leader: { type: Schema.Types.ObjectId, required: true, ref: "User" },
+        location: LocationSchema,
         followers: [UserSchema],
         route: [LocationSchema],
         landmarks: { type: [Schema.Types.ObjectId], ref: "Landmark" },

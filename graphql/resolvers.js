@@ -106,9 +106,9 @@ const resolvers = {
             if (beacon.followers.includes(user)) return new Error("Already following the beacon");
 
             beacon.followers.push(user);
-            console.log(user);
+            console.log("user joined beacon: ", user);
             await beacon.save().then(b => b.populate("leader").execPopulate());
-            pubsub.publish("BEACON_JOINED", { beaconFollower: user, beaconID: beacon.id });
+            pubsub.publish("BEACON_JOINED", { beaconJoined: user, beaconID: beacon.id });
 
             user.beacons.push(beacon.id);
             await user.save();
