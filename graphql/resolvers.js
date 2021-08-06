@@ -144,6 +144,19 @@ const resolvers = {
             return beacon;
         },
 
+        updateUserLocation: async (_, { id, location }, { user, pubsub }) => {
+            const beacon = await Beacon.findById(id);
+            if (!beacon) return new UserInputError("No beacon exists with that id.");
+
+            user.location = location;
+            await user.save();
+
+            // beacon id used for filtering but only location sent to user bc schema
+            pubsub.publish("USER_LOCATION", { userLocation: user, beaconID: beacon.id }); // TODO: harden it so non-essential user data is not exposed
+
+            return user;
+        },
+
         changeLeader: async (_, { beaconID, newLeaderID }, { user }) => {
             const beacon = await Beacon.findById(beaconID);
             if (!beacon) return new UserInputError("No beacon exists with that id.");
@@ -162,6 +175,12 @@ const resolvers = {
             subscribe: withFilter(
                 (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
                 (payload, variables) => payload.beaconID === variables.id
+            ),
+        },
+        userLocation: {
+            subscribe: withFilter(
+                (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
+                (payload, variables) => payload.beaconID === variables.id // TODO: account for self updates
             ),
         },
         beaconJoined: {

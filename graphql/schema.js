@@ -105,7 +105,8 @@ const typeDefs = gql`
     }
 
     type Subscription {
-        beaconLocation(id: ID!): Location
+        beaconLocation(id: ID!): Location!
+        userLocation(id: ID!): User!
         beaconJoined(id: ID!): User!
     }
 
