@@ -118,7 +118,8 @@ const resolvers = {
 
         createLandmark: async (_, { landmark, beaconID }, { user }) => {
             const beacon = await Beacon.findById(beaconID);
-            if (!beacon || !beacon.followers.includes(user.id) || beacon.leader !== user.id)
+            // to save on a db call to populate leader, we just use the stored id to compare
+            if (!beacon || (!beacon.followers.includes(user.id) && beacon.leader.toString() !== user.id))
                 return new UserInputError("User should be part of beacon.");
             const newLandmark = new Landmark({ createdBy: user.id, ...landmark });
             await newLandmark.save();
