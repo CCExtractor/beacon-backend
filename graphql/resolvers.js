@@ -17,7 +17,7 @@ const resolvers = {
         hello: () => "Hello world!",
         me: (_parent, _args, { user }) => user.populate("landmarks"),
         beacon: async (_parent, { id }, { user }) => {
-            const beacon = await Beacon.findById(id);
+            const beacon = await Beacon.findById(id).populate("landmarks");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             // return beacon iff user in beacon
             if (beacon.leader === user.id || beacon.followers.includes(user))
