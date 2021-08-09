@@ -83,6 +83,7 @@ const typeDefs = gql`
 
     type Query {
         beacon(id: ID!): Beacon!
+        nearbyBeacons(location: LocationInput!): [Beacon!]!
         me: User
         hello: String
     }

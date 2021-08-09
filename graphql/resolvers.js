@@ -2,6 +2,7 @@ import { AuthenticationError, UserInputError, withFilter } from "apollo-server-e
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { customAlphabet } from "nanoid";
+import isPointWithinRadius from "geolib/es/isPointWithinRadius";
 import Beacon from "../models/beacon.js";
 import Landmark from "../models/landmark.js";
 import { User } from "../models/user.js";
@@ -22,6 +23,16 @@ const resolvers = {
             if (beacon.leader === user.id || beacon.followers.includes(user))
                 return new Error("User should be a part of beacon");
             return beacon;
+        },
+        nearbyBeacons: async (_, { location }) => {
+            // get active beacons
+            const beacons = await Beacon.find({ expiresAt: { $gte: new Date() } });
+            let nearby = [];
+            beacons.forEach(b => {
+                if (isPointWithinRadius(b.startLocation, location, 1500)) nearby.push(b); // add beacons within 1.5km
+            });
+            console.log("nearby beacons:", nearby);
+            return nearby;
         },
     },
 
