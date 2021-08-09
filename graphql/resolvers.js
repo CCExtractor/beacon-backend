@@ -2,7 +2,7 @@ import { AuthenticationError, UserInputError, withFilter } from "apollo-server-e
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { customAlphabet } from "nanoid";
-import isPointWithinRadius from "geolib/es/isPointWithinRadius";
+import isPointWithinRadius from "geolib/es/isPointWithinRadius.js";
 import Beacon from "../models/beacon.js";
 import Landmark from "../models/landmark.js";
 import { User } from "../models/user.js";
