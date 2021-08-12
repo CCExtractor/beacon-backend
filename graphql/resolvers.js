@@ -192,7 +192,9 @@ const resolvers = {
         userLocation: {
             subscribe: withFilter(
                 (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
-                (payload, variables) => payload.beaconID === variables.id // TODO: account for self updates
+                (payload, variables, { user }) => {
+                    return payload.beaconID === variables.id && payload.userLocation.id !== user.id; // account for self updates
+                }
             ),
         },
         beaconJoined: {

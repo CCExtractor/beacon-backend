@@ -1,6 +1,7 @@
 import http from "http";
 import express from "express";
 import expressJWT from "express-jwt";
+import jwt from "jsonwebtoken";
 import { ApolloServer, PubSub } from "apollo-server-express";
 import { applyMiddleware } from "graphql-middleware";
 import { makeExecutableSchema } from "graphql-tools";
@@ -15,14 +16,32 @@ const pubsub = new PubSub();
 
 const server = new ApolloServer({
     schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
-    context: async ({ req }) => {
+    context: async ({ req, connection }) => {
+        // initialize context even if it comes from subscription connection
+        // TODO: cleanup
+        if (connection) {
+            return { user: connection.context.user, pubsub };
+        }
         const user = req?.user ? await User.findById(req.user.sub).populate("beacons") : null;
         return { user, pubsub };
     },
     subscriptions: {
         path: "/subscriptions",
-        onConnect: () => {
+        onConnect: async connectionParams => {
             console.log("Client connected");
+            const authorization = connectionParams["Authorization"];
+            // add user to connection context
+            if (authorization) {
+                try {
+                    const decoded = jwt.verify(authorization.replace("Bearer ", ""), process.env.JWT_SECRET);
+                    console.log("decoded: ", decoded);
+                    const user = await User.findById(decoded.sub).populate("beacons");
+                    return { user };
+                } catch (err) {
+                    throw new Error("Invalid token!");
+                }
+            }
+            throw new Error("Missing auth token!");
         },
         onDisconnect: () => {
             console.log("Client disconnected");
