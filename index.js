@@ -16,6 +16,7 @@ const pubsub = new PubSub();
 
 const server = new ApolloServer({
     schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
+    // schema: makeExecutableSchema({ typeDefs, resolvers }),  // to temp disable shield on dev
     context: async ({ req, connection }) => {
         // initialize context even if it comes from subscription connection
         // TODO: cleanup

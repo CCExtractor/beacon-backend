@@ -2,7 +2,8 @@ import { AuthenticationError, UserInputError, withFilter } from "apollo-server-e
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { customAlphabet } from "nanoid";
-import isPointWithinRadius from "geolib/es/isPointWithinRadius.js";
+import geolib from "geolib";
+const { isPointWithinRadius } = geolib;
 import Beacon from "../models/beacon.js";
 import Landmark from "../models/landmark.js";
 import { User } from "../models/user.js";
@@ -15,7 +16,7 @@ const nanoid = customAlphabet(alphabet, 6);
 const resolvers = {
     Query: {
         hello: () => "Hello world!",
-        me: (_parent, _args, { user }) => user.populate("landmarks"),
+        me: (_parent, _args, { user }) => user.populate("landmarks").populate("beacons.leader"),
         beacon: async (_parent, { id }, { user }) => {
             const beacon = await Beacon.findById(id).populate("landmarks");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
@@ -29,7 +30,9 @@ const resolvers = {
             const beacons = await Beacon.find({ expiresAt: { $gte: new Date() } });
             let nearby = [];
             beacons.forEach(b => {
-                if (isPointWithinRadius(b.startLocation, location, 1500)) nearby.push(b); // add beacons within 1.5km
+                // unpack to not pass extra db fields to function
+                const { lat, lon } = b.location;
+                if (isPointWithinRadius({ lat, lon }, location, 1500)) nearby.push(b); // add beacons within 1.5km
             });
             console.log("nearby beacons:", nearby);
             return nearby;
