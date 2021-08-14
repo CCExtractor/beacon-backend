@@ -1,4 +1,4 @@
-import { AuthenticationError, UserInputError, withFilter } from "apollo-server-express";
+import { AuthenticationError, UserInputError, withFilter } from "apollo-server-lambda";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { customAlphabet } from "nanoid";
