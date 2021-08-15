@@ -1,7 +1,7 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-import LocationSchema from "./location.js";
-import { UserSchema } from "./user.js";
+const LocationSchema = require("./location.js");
+const { UserSchema } = require("./user.js");
 
 const { Schema, model } = mongoose;
 
@@ -22,4 +22,4 @@ const beaconSchema = new Schema(
     }
 );
 
-export default model("Beacon", beaconSchema, "Beacons"); // specify collection name
+module.exports = model("Beacon", beaconSchema, "Beacons"); // specify collection name

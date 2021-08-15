@@ -1,12 +1,12 @@
-import { AuthenticationError, UserInputError, withFilter } from "apollo-server-lambda";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { customAlphabet } from "nanoid";
-import geolib from "geolib";
+const { AuthenticationError, UserInputError, withFilter } = require("apollo-server-lambda");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { customAlphabet } = require("nanoid");
+const geolib = require("geolib");
 const { isPointWithinRadius } = geolib;
-import Beacon from "../models/beacon.js";
-import Landmark from "../models/landmark.js";
-import { User } from "../models/user.js";
+const Beacon = require("../models/beacon.js");
+const Landmark = require("../models/landmark.js");
+const { User } = require("../models/user.js");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -209,4 +209,4 @@ const resolvers = {
     },
 };
 
-export default resolvers;
+module.exports = resolvers;

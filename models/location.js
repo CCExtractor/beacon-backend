@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const { Schema } = mongoose;
 
@@ -12,4 +12,4 @@ const locationSchema = new Schema(
     }
 );
 
-export default locationSchema;
+module.exports = locationSchema;

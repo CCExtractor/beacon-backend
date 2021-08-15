@@ -1,15 +1,14 @@
-// import http from "http";
-import express from "express";
-import expressJWT from "express-jwt";
-// import jwt from "jsonwebtoken";
-import { ApolloServer } from "apollo-server-lambda";
-// import { applyMiddleware } from "graphql-middleware";
-import { makeExecutableSchema } from "graphql-tools";
-import mongoose from "mongoose";
-
-import typeDefs from "./graphql/schema.js";
-import resolvers from "./graphql/resolvers.js";
-import { User } from "./models/user.js";
+// const http =  require("http");
+const express = require("express");
+const expressJWT = require("express-jwt");
+// const jwt =  require("jsonwebtoken");
+const { ApolloServer } = require("apollo-server-lambda");
+// const { applyMiddleware } =  require("graphql-middleware");
+const { makeExecutableSchema } = require("graphql-tools");
+const mongoose = require("mongoose");
+const typeDefs = require("./graphql/schema.js");
+const resolvers = require("./graphql/resolvers.js");
+const { User } = require("./models/user.js");
 // import { permissions } from "./permissions/index.js";
 
 // const pubsub = new PubSub();

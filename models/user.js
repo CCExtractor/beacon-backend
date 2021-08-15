@@ -1,10 +1,10 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-import LocationSchema from "./location.js";
+const LocationSchema = require("./location.js");
 
 const { Schema, model } = mongoose;
 
-export const UserSchema = new Schema(
+const UserSchema = new Schema(
     {
         name: String,
         email: String,
@@ -18,4 +18,4 @@ export const UserSchema = new Schema(
     }
 );
 
-export const User = model("User", UserSchema, "Users"); // specify collection name
+module.exports = { UserSchema, User: model("User", UserSchema, "Users") }; // specify collection name
