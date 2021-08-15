@@ -10,6 +10,7 @@ const typeDefs = require("./graphql/schema.js");
 const resolvers = require("./graphql/resolvers.js");
 const { User } = require("./models/user.js");
 // import { permissions } from "./permissions/index.js";
+require("dotenv").config();
 
 // const pubsub = new PubSub();
 

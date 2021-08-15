@@ -1,4 +1,4 @@
-const { AuthenticationError, UserInputError, withFilter } = require("apollo-server-lambda");
+const { AuthenticationError, UserInputError } = require("apollo-server-lambda");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { customAlphabet } = require("nanoid");
@@ -185,28 +185,28 @@ const resolvers = {
         },
     },
 
-    Subscription: {
-        beaconLocation: {
-            subscribe: withFilter(
-                (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
-                (payload, variables) => payload.beaconID === variables.id
-            ),
-        },
-        userLocation: {
-            subscribe: withFilter(
-                (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
-                (payload, variables, { user }) => {
-                    return payload.beaconID === variables.id && payload.userLocation.id !== user.id; // account for self updates
-                }
-            ),
-        },
-        beaconJoined: {
-            subscribe: withFilter(
-                (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_JOINED"]),
-                (payload, variables) => payload.beaconID === variables.id
-            ),
-        },
-    },
+    // Subscription: {
+    //     beaconLocation: {
+    //         subscribe: withFilter(
+    //             (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
+    //             (payload, variables) => payload.beaconID === variables.id
+    //         ),
+    //     },
+    //     userLocation: {
+    //         subscribe: withFilter(
+    //             (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
+    //             (payload, variables, { user }) => {
+    //                 return payload.beaconID === variables.id && payload.userLocation.id !== user.id; // account for self updates
+    //             }
+    //         ),
+    //     },
+    //     beaconJoined: {
+    //         subscribe: withFilter(
+    //             (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_JOINED"]),
+    //             (payload, variables) => payload.beaconID === variables.id
+    //         ),
+    //     },
+    // },
 };
 
 module.exports = resolvers;
