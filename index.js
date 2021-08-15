@@ -3,32 +3,54 @@ const express = require("express");
 const expressJWT = require("express-jwt");
 // const jwt =  require("jsonwebtoken");
 const { ApolloServer } = require("apollo-server-lambda");
-// const { applyMiddleware } =  require("graphql-middleware");
+const { applyMiddleware } = require("graphql-middleware");
 const { makeExecutableSchema } = require("graphql-tools");
 const mongoose = require("mongoose");
 const typeDefs = require("./graphql/schema.js");
 const resolvers = require("./graphql/resolvers.js");
 const { User } = require("./models/user.js");
-// import { permissions } from "./permissions/index.js";
+const { permissions } = require("./permissions/index.js");
 require("dotenv").config();
 
+let conn = null;
 // const pubsub = new PubSub();
+const uri = process.env.DB;
+const options = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000,
+    bufferCommands: false,
+};
+
+// console.log("connecting to db");
+// (async () => await mongoose.connect(uri, options))();
+// console.log("just connected to db");
+// .then(() =>
+//     app.listen(
+//         { port: 4000 },
+//         console.log(
+//             `Server ready at http://localhost:4000${server.graphqlPath}\n` +
+//                 `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
+//         )
+//     )
+// )
+// .catch(error => {
+//     throw error;
+// });
 
 const server = new ApolloServer({
-    // schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
-    schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
-    context: async ({ express }) => {
+    schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
+    // schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
+    context: async ({ context, express }) => {
         // initialize context even if it comes from subscription connection
         // TODO: cleanup
         // if (connection) {
         //     return { user: connection.context.user };
         // }
+        context.callbackWaitsForEmptyEventLoop = false;
         const { req } = express;
         const user = req?.user ? await User.findById(req.user.sub).populate("beacons") : null;
         return { user };
-    },
-    playground: {
-        endpoint: "/dev/graphql",
     },
     // subscriptions: {
     //     path: "/subscriptions",
@@ -58,23 +80,7 @@ const server = new ApolloServer({
 // const httpServer = http.createServer(app);
 // server.installSubscriptionHandlers(httpServer);
 
-const uri = process.env.DB;
-const options = { useNewUrlParser: true, useUnifiedTopology: true };
-mongoose.connect(uri, options);
-// .then(() =>
-//     app.listen(
-//         { port: 4000 },
-//         console.log(
-//             `Server ready at http://localhost:4000${server.graphqlPath}\n` +
-//                 `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
-//         )
-//     )
-// )
-// .catch(error => {
-//     throw error;
-// });
-
-exports.handler = server.createHandler({
+const graphqlHandler = server.createHandler({
     expressAppFromMiddleware(middleware) {
         const app = express();
         app.use(
@@ -85,7 +91,7 @@ exports.handler = server.createHandler({
             })
         );
 
-        app.get("/", (req, res) => res.send("Hello World! This is a GraphQL API. Check out /graphql"));
+        // app.get("/", (req, res) => res.send("Hello World! This is a GraphQL API. Check out /graphql"));
 
         app.get("/j/:shortcode", async (_req, res) => {
             console.log(`shortcode route hit`);
@@ -102,3 +108,14 @@ exports.handler = server.createHandler({
         },
     },
 });
+
+exports.handler = async (event, context) => {
+    context.callbackWaitsForEmptyEventLoop = false;
+    if (!conn) {
+        console.log("connecting to db");
+        conn = mongoose.connect(uri, options).then(() => mongoose);
+        console.log("just connected to db");
+        await conn;
+    }
+    return graphqlHandler(event, context);
+};

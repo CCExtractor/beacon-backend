@@ -1,20 +1,25 @@
 # serverless.yml
 
-useDotenv: true
 service: apollo-lambda
+useDotenv: true
 provider:
-  name: aws
-  runtime: nodejs14.x
+    name: aws
+    runtime: nodejs14.x
 functions:
-  graphql:
-    # this is formatted as <FILENAME>.<HANDLER>
-    handler: index.handler
-    events:
-    - http:
-        path: /
-        method: post
-        cors: true
-    - http:
-        path: /
-        method: get
-        cors: true
+    graphql:
+        # this is formatted as <FILENAME>.<HANDLER>
+        handler: index.handler
+        events:
+            - http:
+                  path: /
+                  method: post
+                  cors: true
+            - http:
+                  path: /
+                  method: get
+                  cors: true
+plugins:
+    - serverless-offline
+custom:
+    serverless-offline:
+        noPrependStageInUrl: true
