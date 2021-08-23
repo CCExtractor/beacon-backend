@@ -2,7 +2,7 @@
 const { StartInstancesCommand, StopInstancesCommand, DescribeInstancesCommand } = require("@aws-sdk/client-ec2");
 const { ec2Client } = require("../utils");
 const mongoose = require("mongoose");
-const { Beacon } = require("../models/beacon.js");
+const Beacon = require("../models/beacon.js");
 require("dotenv").config();
 
 let conn = null;
@@ -18,7 +18,7 @@ const options = {
 
 const manageInstance = async () => {
     const status = await ec2Client.send(new DescribeInstancesCommand(params));
-    console.log(status);
+    console.log(status["Reservations"]["Instances"]);
     const currentTime = new Date();
     const beacons = Beacon.find({ $or: [{ startsAt: { $gte: currentTime } }, { expiresAt: { $gte: currentTime } }] })
         .sort("startsAt")
