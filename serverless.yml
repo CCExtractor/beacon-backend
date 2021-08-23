@@ -18,6 +18,11 @@ functions:
                   path: /
                   method: get
                   cors: true
+    manager:
+        handler: functions/manager.handler
+        events:
+            - schedule: rate(5 minutes)
+
 plugins:
     - serverless-offline
 custom:
