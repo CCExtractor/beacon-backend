@@ -18,9 +18,11 @@ const options = {
 
 const manageInstance = async () => {
     const status = await ec2Client.send(new DescribeInstancesCommand(params));
-    console.log(status["Reservations"]["Instances"]);
+    const state = status["Reservations"][0]["Instances"]["State"]["Status"];
     const currentTime = new Date();
-    const beacons = Beacon.find({ $or: [{ startsAt: { $gte: currentTime } }, { expiresAt: { $gte: currentTime } }] })
+    const beacons = await Beacon.find({
+        $or: [{ startsAt: { $gte: currentTime } }, { expiresAt: { $gte: currentTime } }],
+    })
         .sort("startsAt")
         .select("startsAt")
         .select("expiresAt");
@@ -39,12 +41,14 @@ const manageInstance = async () => {
             return o.expiresAt;
         })
     );
-    const startDiff = earliestStart - currentTime;
-    if (startDiff < 300000) {
-        // 5m in ms
-        const data = await ec2Client.send(new StartInstancesCommand(params));
-        console.log("started instance", data.StartingInstances);
-        return data;
+    if (state === "stopped") {
+        const startDiff = earliestStart - currentTime;
+        if (startDiff < 300000) {
+            // 5m in ms
+            const data = await ec2Client.send(new StartInstancesCommand(params));
+            console.log("started instance", data.StartingInstances);
+            return data;
+        }
     }
     if (earliestEnd < currentTime) {
         const data = await ec2Client.send(new StopInstancesCommand(params));
