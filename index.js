@@ -2,7 +2,7 @@ import http from "http";
 import express from "express";
 import expressJWT from "express-jwt";
 import jwt from "jsonwebtoken";
-import { ApolloServer, PubSub } from "apollo-server-express";
+import { ApolloServer } from "apollo-server-express";
 import { applyMiddleware } from "graphql-middleware";
 import { makeExecutableSchema } from "graphql-tools";
 import mongoose from "mongoose";
@@ -11,8 +11,7 @@ import typeDefs from "./graphql/schema.js";
 import resolvers from "./graphql/resolvers.js";
 import { User } from "./models/user.js";
 import { permissions } from "./permissions/index.js";
-
-const pubsub = new PubSub();
+import pubsub from "./pubsub.js";
 
 const server = new ApolloServer({
     schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
