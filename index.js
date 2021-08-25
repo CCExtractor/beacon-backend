@@ -10,6 +10,7 @@ const typeDefs = require("./graphql/schema.js");
 const resolvers = require("./graphql/resolvers.js");
 const { User } = require("./models/user.js");
 const { permissions } = require("./permissions/index.js");
+const pubsub = require("./pubsub.js");
 require("dotenv").config();
 
 let conn = null;
@@ -50,7 +51,7 @@ const server = new ApolloServer({
         context.callbackWaitsForEmptyEventLoop = false;
         const { req } = express;
         const user = req?.user ? await User.findById(req.user.sub).populate("beacons") : null;
-        return { user };
+        return { user, pubsub };
     },
     // subscriptions: {
     //     path: "/subscriptions",
