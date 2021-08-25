@@ -18,4 +18,6 @@ npm i
 npm start
 ```
 
-for the serverless stuff, it is just adding the env vars to the configuration and doing `serverless deploy`, once you have it installed.
+for the serverless stuff, your .env file will be populated to the functions so you only need to do `serverless deploy`, once you have it installed.
+
+for the ec2 instance, you would want to deploy the normal `master` branch to a server and set up a cron job or similar that would start the service when the instance is started after it was paused
