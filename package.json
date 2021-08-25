@@ -39,6 +39,7 @@
   "devDependencies": {
     "eslint": "^7.31.0",
     "prettier": "^2.3.1",
+    "serverless-dotenv-plugin": "^3.9.0",
     "serverless-offline": "^8.0.0"
   }
 }

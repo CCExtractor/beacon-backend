@@ -25,6 +25,7 @@ functions:
 
 plugins:
     - serverless-offline
+    - serverless-dotenv-plugin
 custom:
     serverless-offline:
         noPrependStageInUrl: true
