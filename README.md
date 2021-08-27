@@ -1,6 +1,6 @@
 # beacon-backend
 
-This is the backend for the beacon app. It is written in GraphQL using Apollo and has realtime subscriptions to share user locations with one another. A MongoDB Atlas cluster is used for databasing.
+This is the backend for the beacon app. It is written in GraphQL using Apollo and has realtime subscriptions to share user locations with one another. A MongoDB Atlas cluster is used for databasing. You can create your own and put the connection string in the .env file.
 
 `master` contains all the queries, mutations and subscriptions together for running on a standalone server. The `aws` branch has been modified to run the API on AWS Lambda which is a serverless platform so no resources are used while idle. This means subscriptions cannot be run since it is serverless, so we have another `manager` function that starts an ec2 instance while a beacon is active since that is only when subscriptions are necessary, and it pauses the ec2 instance when there is no beacon running. To communicate across Lambda and ec2, redis is used for the pub/sub mechanism.
 
