@@ -6,7 +6,7 @@ const Beacon = require("../models/beacon.js");
 require("dotenv").config();
 
 let conn = null;
-const params = { InstanceIds: ["i-01cb8ad74e8e49db3"] }; // ec2 instance ID
+const params = { InstanceIds: [process.env.INSTANCE] }; // ec2 instance ID
 
 const uri = process.env.DB;
 const options = {
