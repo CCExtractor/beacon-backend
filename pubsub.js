@@ -3,7 +3,7 @@ const Redis = require("ioredis");
 
 const options = {
     host: process.env.REDIS_URL,
-    port: 19627,
+    port: process.env.REDIS_PORT,
     password: process.env.REDIS_AUTH,
     retryStrategy: times => {
         // reconnect after
