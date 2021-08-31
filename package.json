@@ -25,7 +25,7 @@
     "dotenv": "^10.0.0",
     "express-jwt": "^6.0.0",
     "geolib": "^3.3.1",
-    "graphql": "^15.5.0",
+    "graphql": "^15.5.2",
     "graphql-middleware": "^6.0.10",
     "graphql-redis-subscriptions": "^2.4.0",
     "graphql-shield": "^7.5.0",
