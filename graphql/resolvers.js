@@ -117,6 +117,7 @@ const resolvers = {
             const beacon = await Beacon.findOne({ shortcode });
 
             if (!beacon) return new UserInputError("No beacon exists with that shortcode.");
+            if(beacon.expiresAt < Date()) return new Error("Beacon has expired");
             if (beacon.followers.includes(user)) return new Error("Already following the beacon");
 
             beacon.followers.push(user);
