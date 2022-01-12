@@ -32,7 +32,7 @@
     "ioredis": "^4.27.8",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.12.13",
-    "nanoid": "^3.1.23"
+    "nanoid": "^3.1.31"
   },
   "devDependencies": {
     "eslint": "^7.31.0",
