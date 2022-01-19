@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/CCExtractor/beacon-backend#readme",
   "dependencies": {
-    "apollo-server-express": "^2.7.0",
+    "apollo-server-express": "^3.6.2",
     "bcryptjs": "^2.4.3",
     "dotenv": "^10.0.0",
     "express-jwt": "^6.0.0",
