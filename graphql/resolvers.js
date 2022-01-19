@@ -65,7 +65,7 @@ const resolvers = {
             const { email, password } = credentials || {}; // unpack if available
             const user = id ? await User.findById(id) : await User.findOne({ email });
 
-            if (!user) return new Error("User not found.");
+            if (!user) return new Error("No account registered with this email");
 
             // prevent third party using id to login when user registered
             if (user.email && !credentials) return new UserInputError("Email/password required to login");
@@ -76,7 +76,7 @@ const resolvers = {
 
             if (credentials) {
                 const valid = email === user.email && (await bcrypt.compare(password, user.password));
-                if (!valid) return new AuthenticationError("credentials don't match");
+                if (!valid) return new AuthenticationError("Enter a valid password");
                 anon = false;
             }
 
