@@ -103,6 +103,7 @@ const typeDefs = gql`
         updateBeaconLocation(id: ID!, location: LocationInput!): Beacon!
         updateUserLocation(id: ID!, location: LocationInput!): User!
         changeLeader(beaconID: ID!, newLeaderID: ID!): Beacon!
+        deactivateBeacon(beaconID: ID!): Beacon!
     }
 
     type Subscription {

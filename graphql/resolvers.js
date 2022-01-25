@@ -184,6 +184,19 @@ const resolvers = {
 
             return beacon;
         },
+
+        deactivateBeacon: async (_, { beaconID }, { user }) => {
+            const beacon = await Beacon.findById(beaconID);
+            if (!beacon) return new UserInputError("No beacon exists with that id.");
+
+            if (beacon.leader != user.id) return new Error("Only the beacon leader can deactivate the beacon.");
+
+            if (beacon.expiresAt < Date.now()) return new Error("Beacon has already expired");
+
+            beacon.expiresAt = Date.now();
+            await beacon.save();
+            return beacon;
+        },
     },
 
     Subscription: {
