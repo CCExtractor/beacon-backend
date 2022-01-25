@@ -18,7 +18,7 @@ const resolvers = {
         hello: () => "Hello world!",
         me: (_parent, _args, { user }) => user.populate("landmarks").populate("beacons.leader"),
         beacon: async (_parent, { id }, { user }) => {
-            const beacon = await Beacon.findById(id).populate("landmarks");
+            const beacon = await Beacon.findById(id).populate("landmarks").populate("leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             // return beacon iff user in beacon
             if (beacon.leader === user.id || beacon.followers.includes(user))
@@ -27,7 +27,7 @@ const resolvers = {
         },
         nearbyBeacons: async (_, { location }) => {
             // get active beacons
-            const beacons = await Beacon.find({ expiresAt: { $gte: new Date() } });
+            const beacons = await Beacon.find({ expiresAt: { $gte: new Date() } }).populate("leader");
             let nearby = [];
             beacons.forEach(b => {
                 // unpack to not pass extra db fields to function
