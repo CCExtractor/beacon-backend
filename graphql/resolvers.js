@@ -98,7 +98,7 @@ const resolvers = {
 
         createBeacon: async (_, { beacon }, { user }) => {
             console.log(beacon);
-
+            if (beacon.startsAt>beacon.expiresAt) return Error("Beacon can not expire before it has started.");
             const beaconDoc = new Beacon({
                 leader: user.id,
                 shortcode: nanoid(),
@@ -113,14 +113,15 @@ const resolvers = {
             return newBeacon;
         },
 
-        changeBeaconDuration: async (_, { newExpiresAt, beaconID }, { user }) => {
+        changeBeaconDuration: async (_, { newStartsAt, newExpiresAt, beaconID }, { user }) => {
             const beacon = await Beacon.findById(beaconID).populate("leader");
 
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             if (beacon.leader.id != user.id)
                 return new Error("Only the leader is allowed to change the beacon duration.");
-            if (beacon.startsAt.getTime() > newExpiresAt) return Error("Beacon can not expire before it has started.");
+            if (newStartsAt > newExpiresAt) return Error("Beacon can not expire before it has started.");
 
+            beacon.startsAt = newStartsAt;
             beacon.expiresAt = newExpiresAt;
             await beacon.save();
 
