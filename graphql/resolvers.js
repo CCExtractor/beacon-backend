@@ -98,7 +98,7 @@ const resolvers = {
 
         createBeacon: async (_, { beacon }, { user }) => {
             console.log(beacon);
-            if (beacon.startsAt>beacon.expiresAt) return Error("Beacon can not expire before it has started.");
+            if (beacon.startsAt > beacon.expiresAt) return Error("Beacon can not expire before it has started.");
             const beaconDoc = new Beacon({
                 leader: user.id,
                 shortcode: nanoid(),
