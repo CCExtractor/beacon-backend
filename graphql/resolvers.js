@@ -16,7 +16,7 @@ const nanoid = customAlphabet(alphabet, 6);
 const resolvers = {
     Query: {
         hello: () => "Hello world!",
-        me: (_parent, _args, { user }) => user.populate("landmarks").populate("beacons.leader"),
+        me: (_parent, _args, { user }) => user.populate("beacons.leader"),
         beacon: async (_parent, { id }, { user }) => {
             const beacon = await Beacon.findById(id).populate("landmarks").populate("leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
