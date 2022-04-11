@@ -127,6 +127,10 @@ const resolvers = {
             return beacon;
         },
 
+        deleteBeacon: async (_, {beaconID}) =>{
+                return await Beacon.findByIdAndRemove(beaconID);
+            },
+
         joinBeacon: async (_, { shortcode }, { user, pubsub }) => {
             const beacon = await Beacon.findOne({ shortcode });
 

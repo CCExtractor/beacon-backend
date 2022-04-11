@@ -93,6 +93,7 @@ const typeDefs = gql`
         if start time not supplied, default is Date.now
         """
         createBeacon(beacon: BeaconInput): Beacon!
+        deleteBeacon(beaconID: ID!): Beacon!
         createLandmark(landmark: LandmarkInput, beaconID: ID!): Landmark!
         register(user: RegistrationInput): User!
         """
