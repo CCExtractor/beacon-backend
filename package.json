@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node -r dotenv/config index.js",
+    "start_aws": "node -r dotenv/config index.js",
+    "start_express": "node -r dotenv/config express_server.mjs",
     "format": "npx prettier -w \"**/*.js\""
   },
   "repository": {
@@ -26,15 +27,15 @@
     "bcryptjs": "^2.4.3",
     "dotenv": "^10.0.0",
     "express-jwt": "^6.0.0",
-    "geolib": "^3.3.1",
-    "graphql": "^15.5.0",
-    "graphql-middleware": "^6.0.10",
+    "geolib": "^3.3.3",
+    "graphql": "^15.3.0",
+    "graphql-middleware": "6.0.9",
     "graphql-redis-subscriptions": "^2.4.0",
     "graphql-shield": "^7.5.0",
     "ioredis": "^4.27.8",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.12.13",
-    "nanoid": "^3.1.23"
+    "mongoose": "^6.2.6",
+    "nanoid": "^3.3.1"
   },
   "devDependencies": {
     "eslint": "^7.31.0",

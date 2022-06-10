@@ -103,12 +103,13 @@ const typeDefs = gql`
         updateBeaconLocation(id: ID!, location: LocationInput!): Beacon!
         updateUserLocation(id: ID!, location: LocationInput!): User!
         changeLeader(beaconID: ID!, newLeaderID: ID!): Beacon!
+        changeBeaconDuration(newExpiresAt: Float!, beaconID: ID!): Beacon!
     }
 
     type Subscription {
-        beaconLocation(id: ID!): Location!
-        userLocation(id: ID!): User!
-        beaconJoined(id: ID!): User!
+        beaconLocation(id: ID!): Location
+        userLocation(id: ID!): User
+        beaconJoined(id: ID!): User
     }
 
     schema {
