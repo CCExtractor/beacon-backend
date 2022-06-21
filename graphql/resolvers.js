@@ -18,8 +18,6 @@ const resolvers = {
         hello: () => "Hello world!",
         me: async (_parent, _args, { user }) => {
             await user.populate("beacons.leader beacons.landmarks");
-            // console.clear();
-            // console.log("USER:::::::::" + user);
             return user;
         },
         beacon: async (_parent, { id }, { user }) => {
@@ -203,7 +201,7 @@ const resolvers = {
             return beacon;
         },
     },
-    ...(process.env.EXPRESS === "true" && {
+    ...(process.env.SUBSCRIPTIONS === "true" && {
         Subscription: {
             beaconLocation: {
                 subscribe: withFilter(

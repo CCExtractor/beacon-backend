@@ -18,13 +18,9 @@ const server = new ApolloServer({
     // schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
     context: async ({ req, connection }) => {
         // initialize context even if it comes from subscription connection
-        // TODO: cleanup
         if (connection) {
             return { user: connection.context.user, pubsub };
         }
-        // console.clear();
-        // console.log(req.user);
-        // console.log("-------------------------------");
         const user = req?.user ? await User.findById(req.user.sub).populate("beacons") : null;
         return { user, pubsub };
     },
