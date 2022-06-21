@@ -201,7 +201,7 @@ const resolvers = {
             return beacon;
         },
     },
-    ...(process.env.SUBSCRIPTIONS === "true" && {
+    ...(process.env._HANDLER == null && {
         Subscription: {
             beaconLocation: {
                 subscribe: withFilter(
@@ -226,5 +226,4 @@ const resolvers = {
         },
     }),
 };
-
 module.exports = resolvers;
