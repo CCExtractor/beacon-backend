@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start_aws": "node -r dotenv/config serverless/index.js",
-    "start_express": "node -r dotenv/config express_server.mjs",
+    "start": "node -r dotenv/config index.mjs",
     "format": "npx prettier -w \"**/*.js\""
   },
   "repository": {
