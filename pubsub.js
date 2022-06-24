@@ -1,5 +1,5 @@
-import { RedisPubSub } from "graphql-redis-subscriptions";
-import Redis from "ioredis";
+const { RedisPubSub } = require("graphql-redis-subscriptions");
+const Redis = require("ioredis");
 
 const options = {
     host: process.env.REDIS_URL,
@@ -11,7 +11,7 @@ const options = {
     },
 };
 
-export default new RedisPubSub({
+module.exports = new RedisPubSub({
     publisher: new Redis(options),
     subscriber: new Redis(options),
 });
