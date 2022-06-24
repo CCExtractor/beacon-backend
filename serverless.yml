@@ -8,7 +8,7 @@ provider:
 functions:
     graphql:
         # this is formatted as <FILENAME>.<HANDLER>
-        handler: index.handler
+        handler: serverless/index.handler
         events:
             - http:
                   path: /
@@ -19,7 +19,7 @@ functions:
                   method: get
                   cors: true
     manager:
-        handler: functions/manager.handler
+        handler: serverless/functions/manager.handler
         events:
             - schedule: rate(5 minutes)
 

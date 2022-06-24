@@ -2,7 +2,7 @@
 const { StartInstancesCommand, StopInstancesCommand, DescribeInstancesCommand } = require("@aws-sdk/client-ec2");
 const { ec2Client } = require("../utils");
 const mongoose = require("mongoose");
-const Beacon = require("../models/beacon.js");
+const Beacon = require("../../models/beacon.js");
 require("dotenv").config();
 
 let conn = null;

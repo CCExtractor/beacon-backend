@@ -6,11 +6,11 @@ const { ApolloServer } = require("apollo-server-lambda");
 const { applyMiddleware } = require("graphql-middleware");
 const { makeExecutableSchema } = require("graphql-tools");
 const mongoose = require("mongoose");
-const typeDefs = require("./graphql/schema.js");
-const resolvers = require("./graphql/resolvers.js");
-const { User } = require("./models/user.js");
-const { permissions } = require("./permissions/index.js");
-const pubsub = require("./pubsub.js");
+const typeDefs = require("../graphql/schema.js");
+const resolvers = require("../graphql/resolvers.js");
+const { User } = require("../models/user.js");
+const { permissions } = require("../permissions/index.js");
+const pubsub = require("../pubsub.js");
 require("dotenv").config();
 
 let conn = null;
