@@ -38,7 +38,7 @@
     "nanoid": "^3.3.1"
   },
   "devDependencies": {
-    "eslint": "^7.31.0",
+    "eslint": "^8.18.0",
     "prettier": "^2.3.1",
     "serverless-dotenv-plugin": "^3.9.0",
     "serverless-offline": "^8.0.0"
