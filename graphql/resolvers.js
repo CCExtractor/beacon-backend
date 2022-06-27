@@ -119,7 +119,7 @@ const resolvers = {
             const beacon = await Beacon.findById(beaconID);
 
             if (!beacon) return new UserInputError("No beacon exists with that id.");
-            if (beacon.leader.id != user.id)
+            if (beacon.leader != user.id)
                 return new Error("Only the leader is allowed to change the beacon duration.");
             if (newStartsAt > newExpiresAt) return Error("Beacon can not expire before it has started.")
             beacon.startsAt = newStartsAt;
