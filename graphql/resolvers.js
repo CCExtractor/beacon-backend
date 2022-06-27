@@ -1,12 +1,12 @@
-import { AuthenticationError, UserInputError, withFilter } from "apollo-server-express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { customAlphabet } from "nanoid";
-import geolib from "geolib";
+const { AuthenticationError, UserInputError, withFilter } = require("apollo-server-express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { customAlphabet } = require("nanoid");
+const geolib = require("geolib");
 const { isPointWithinRadius } = geolib;
-import Beacon from "../models/beacon.js";
-import Landmark from "../models/landmark.js";
-import { User } from "../models/user.js";
+const Beacon = require("../models/beacon.js");
+const Landmark = require("../models/landmark.js");
+const { User } = require("../models/user.js");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -16,12 +16,15 @@ const nanoid = customAlphabet(alphabet, 6);
 const resolvers = {
     Query: {
         hello: () => "Hello world!",
-        me: (_parent, _args, { user }) => user.populate("landmarks").populate("beacons.leader"),
+        me: async (_parent, _args, { user }) => {
+            await user.populate("beacons.leader beacons.landmarks");
+            return user;
+        },
         beacon: async (_parent, { id }, { user }) => {
-            const beacon = await Beacon.findById(id).populate("landmarks").populate("leader");
+            const beacon = await Beacon.findById(id).populate("landmarks leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             // return beacon iff user in beacon
-            if (beacon.leader === user.id || beacon.followers.includes(user))
+            if (beacon.leader.id === user.id || beacon.followers.includes(user))
                 return new Error("User should be a part of beacon");
             return beacon;
         },
@@ -105,8 +108,7 @@ const resolvers = {
                 location: beacon.startLocation,
                 ...beacon,
             });
-            const newBeacon = await beaconDoc.save().then(b => b.populate("leader").execPopulate());
-
+            const newBeacon = await beaconDoc.save().then(b => b.populate("leader"));
             user.beacons.push(newBeacon.id);
             await user.save();
 
@@ -114,13 +116,12 @@ const resolvers = {
         },
 
         changeBeaconDuration: async (_, { newStartsAt, newExpiresAt, beaconID }, { user }) => {
-            const beacon = await Beacon.findById(beaconID).populate("leader");
+            const beacon = await Beacon.findById(beaconID);
 
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             if (beacon.leader.id != user.id)
                 return new Error("Only the leader is allowed to change the beacon duration.");
-            if (newStartsAt > newExpiresAt) return Error("Beacon can not expire before it has started.");
-
+            if (newStartsAt > newExpiresAt) return Error("Beacon can not expire before it has started.")
             beacon.startsAt = newStartsAt;
             beacon.expiresAt = newExpiresAt;
             await beacon.save();
@@ -137,7 +138,8 @@ const resolvers = {
 
             beacon.followers.push(user);
             console.log("user joined beacon: ", user);
-            await beacon.save().then(b => b.populate("leader").execPopulate());
+            await beacon.save().then(b => b.populate("leader"));
+
             pubsub.publish("BEACON_JOINED", { beaconJoined: user, beaconID: beacon.id });
 
             user.beacons.push(beacon.id);
@@ -200,29 +202,29 @@ const resolvers = {
             return beacon;
         },
     },
-
-    Subscription: {
-        beaconLocation: {
-            subscribe: withFilter(
-                (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
-                (payload, variables) => payload.beaconID === variables.id
-            ),
+    ...(process.env._HANDLER == null && {
+        Subscription: {
+            beaconLocation: {
+                subscribe: withFilter(
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
+                    (payload, variables) => payload.beaconID === variables.id
+                ),
+            },
+            userLocation: {
+                subscribe: withFilter(
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
+                    (payload, variables, { user }) => {
+                        return payload.beaconID === variables.id && payload.userLocation.id !== user.id; // account for self updates
+                    }
+                ),
+            },
+            beaconJoined: {
+                subscribe: withFilter(
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_JOINED"]),
+                    (payload, variables) => payload.beaconID === variables.id
+                ),
+            },
         },
-        userLocation: {
-            subscribe: withFilter(
-                (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
-                (payload, variables, { user }) => {
-                    return payload.beaconID === variables.id && payload.userLocation.id !== user.id; // account for self updates
-                }
-            ),
-        },
-        beaconJoined: {
-            subscribe: withFilter(
-                (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_JOINED"]),
-                (payload, variables) => payload.beaconID === variables.id
-            ),
-        },
-    },
+    }),
 };
-
-export default resolvers;
+module.exports = resolvers;

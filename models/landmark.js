@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-import LocationSchema from "./location.js";
+const LocationSchema = require("./location.js");
 
 const { Schema, model } = mongoose;
 
@@ -15,4 +15,4 @@ const landmarkSchema = new Schema(
     }
 );
 
-export default model("Landmark", landmarkSchema, "Landmarks"); // specify collection name
+module.exports = model("Landmark", landmarkSchema, "Landmarks"); // specify collection name

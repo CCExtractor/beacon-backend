@@ -1,7 +1,7 @@
-import { allow, not, shield } from "graphql-shield";
-import { isAuthenticated } from "./rules.js";
+const { allow, not, shield } = require("graphql-shield");
+const { isAuthenticated } = require("./rules.js");
 
-export const permissions = shield({
+const permissions = shield({
     Query: {
         "*": isAuthenticated,
         hello: allow,
@@ -12,3 +12,5 @@ export const permissions = shield({
         login: not(isAuthenticated),
     },
 });
+
+module.exports = { permissions };
