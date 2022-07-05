@@ -5,6 +5,7 @@ const { customAlphabet } = require("nanoid");
 const geolib = require("geolib");
 const { isPointWithinRadius } = geolib;
 const Beacon = require("../models/beacon.js");
+const Group = require("../models/group.js");
 const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
 
@@ -17,7 +18,7 @@ const resolvers = {
     Query: {
         hello: () => "Hello world!",
         me: async (_parent, _args, { user }) => {
-            await user.populate("beacons.leader beacons.landmarks");
+            await user.populate("groups beacons.leader beacons.landmarks");
             return user;
         },
         beacon: async (_parent, { id }, { user }) => {
@@ -113,6 +114,20 @@ const resolvers = {
             await user.save();
 
             return newBeacon;
+        },
+
+        createGroup: async (_, { group }, { user }) => {
+            console.log(group);
+            const groupDoc = new Group({
+                leader: user.id,
+                shortcode: nanoid(),
+                ...group,
+            });
+            const newGroup = await groupDoc.save().then(g => g.populate("leader"));
+            user.groups.push(newGroup.id);
+            await user.save();
+            console.log(newGroup);
+            return newGroup;
         },
 
         changeBeaconDuration: async (_, { newExpiresAt, beaconID }, { user }) => {
