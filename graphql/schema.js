@@ -119,12 +119,14 @@ const typeDefs = gql`
         changeLeader(beaconID: ID!, newLeaderID: ID!): Beacon!
         changeBeaconDuration(newExpiresAt: Float!, beaconID: ID!): Beacon!
         createGroup(group: GroupInput): Group!
+        joinGroup(shortcode: String!): Group!
     }
 
     type Subscription {
         beaconLocation(id: ID!): Location
         userLocation(id: ID!): User
         beaconJoined(id: ID!): User
+        groupJoined(groupID: ID!): User
     }
 
     schema {

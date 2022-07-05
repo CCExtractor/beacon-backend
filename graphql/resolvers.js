@@ -162,6 +162,26 @@ const resolvers = {
             return beacon;
         },
 
+        joinGroup: async (_, { shortcode }, { user, pubsub }) => {
+            const group = await Group.findOne({ shortcode });
+
+            if (!group) return new UserInputError("No group exists with that shortcode!");
+            if (group.members.includes(user.id)) return new Error("Already a member of the group!");
+            if (group.leader == user.id) return new Error("You are the leader of the group!");
+
+            group.members.push(user.id);
+            console.log("user joined group: ", user);
+            await group.save();
+            await group.populate("leader");
+
+            //publish this change over GROUP_JOINED subscription.
+            pubsub.publish("GROUP_JOINED", { groupJoined: user, groupID: group.id });
+
+            user.groups.push(group.id);
+            await user.save();
+            return group;
+        },
+
         createLandmark: async (_, { landmark, beaconID }, { user }) => {
             const beacon = await Beacon.findById(beaconID);
             // to save on a db call to populate leader, we just use the stored id to compare
@@ -236,6 +256,12 @@ const resolvers = {
                 subscribe: withFilter(
                     (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_JOINED"]),
                     (payload, variables) => payload.beaconID === variables.id
+                ),
+            },
+            groupJoined: {
+                subscribe: withFilter(
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["GROUP_JOINED"]),
+                    (payload, variables) => payload.groupID === variables.groupID
                 ),
             },
         },
