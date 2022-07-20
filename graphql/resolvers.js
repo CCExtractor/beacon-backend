@@ -21,13 +21,19 @@ const resolvers = {
             await user.populate("groups beacons.leader beacons.landmarks");
             return user;
         },
-        beacon: async (_parent, { id }, { user }) => {
+        beacon: async (_parent, { id }) => {
             const beacon = await Beacon.findById(id).populate("landmarks leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             // return beacon iff user in beacon
-            if (beacon.leader.id === user.id || beacon.followers.includes(user))
-                return new Error("User should be a part of beacon");
+            // if (beacon.leader.id === user.id || beacon.followers.includes(user))
+            //     return new Error("User should be a part of beacon");
             return beacon;
+        },
+        group: async (_parent, { id }) => {
+            const group = await Group.findById(id).populate("leader members beacons");
+            if (!group) return new UserInputError("No group exists with that id.");
+            console.log(group);
+            return group;
         },
         nearbyBeacons: async (_, { location }) => {
             // get active beacons
@@ -100,24 +106,27 @@ const resolvers = {
             );
         },
 
-        createBeacon: async (_, { beacon }, { user }) => {
-            console.log(beacon);
+        createBeacon: async (_, { beacon, groupID }, { user }) => {
+            //the group to which this beacon will belong to.
+            const group = await Group.findById(groupID);
+            if (!group) return new UserInputError("No group exists with that id.");
 
             const beaconDoc = new Beacon({
                 leader: user.id,
                 shortcode: nanoid(),
                 location: beacon.startLocation,
+                group: group.id,
                 ...beacon,
             });
             const newBeacon = await beaconDoc.save().then(b => b.populate("leader"));
             user.beacons.push(newBeacon.id);
+            group.beacons.push(newBeacon.id);
             await user.save();
-
+            await group.save();
             return newBeacon;
         },
 
         createGroup: async (_, { group }, { user }) => {
-            console.log(group);
             const groupDoc = new Group({
                 leader: user.id,
                 shortcode: nanoid(),
