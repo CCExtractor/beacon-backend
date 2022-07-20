@@ -157,7 +157,23 @@ const resolvers = {
 
             if (!beacon) return new UserInputError("No beacon exists with that shortcode.");
             if (beacon.expiresAt < Date.now()) return new Error("Beacon has expired");
-            if (beacon.followers.includes(user)) return new Error("Already following the beacon");
+            let isFollowing = false;
+            for (let i = 0; i < beacon.followers.length; i++)
+                if (beacon.followers[i].id == user.id) {
+                    isFollowing = true;
+                    break;
+                }
+            if (isFollowing) return new Error("Already following the beacon!");
+            if (beacon.leader == user.id) return new Error("Already leading the beacon!");
+
+            const group = await Group.findById(beacon.group);
+            if (!group) return new UserInputError("No group exists with that id.");
+            //if the user doesnt belong to the group, add him
+            if (group.members.includes(user.id) == false || group.leader != user.id) {
+                group.members.push(user.id);
+                user.groups.push(group.id);
+                await group.save();
+            }
 
             beacon.followers.push(user);
             console.log("user joined beacon: ", user);
