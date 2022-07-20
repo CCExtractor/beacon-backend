@@ -21,7 +21,7 @@ const server = new ApolloServer({
         if (connection) {
             return { user: connection.context.user, pubsub };
         }
-        const user = req?.user ? await User.findById(req.user.sub).populate("beacons groups") : null;
+        const user = req?.user ? await User.findById(req.user.sub).populate("beacons") : null;
         return { user, pubsub };
     },
     subscriptions: {
