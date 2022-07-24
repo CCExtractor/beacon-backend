@@ -118,16 +118,23 @@ const resolvers = {
 
         createGroup: async (_, { group }, { user }) => {
             console.log(group);
-            const groupDoc = new Group({
-                leader: user.id,
-                shortcode: nanoid(),
-                ...group,
-            });
-            const newGroup = await groupDoc.save().then(g => g.populate("leader"));
-            user.groups.push(newGroup.id);
-            await user.save();
-            console.log(newGroup);
-            return newGroup;
+            for (let i = 0; i < 2; i++) {
+                try {
+                    const groupDoc = new Group({
+                        leader: user.id,
+                        shortcode: nanoid(),
+                        ...group,
+                    });
+                    const newGroup = await groupDoc.save().then(g => g.populate("leader"));
+                    user.groups.push(newGroup.id);
+                    await user.save();
+                    console.log(newGroup);
+                    return newGroup;
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+            return new Error("Please try again!");
         },
 
         changeBeaconDuration: async (_, { newExpiresAt, beaconID }, { user }) => {
