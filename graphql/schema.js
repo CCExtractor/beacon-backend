@@ -69,6 +69,7 @@ const typeDefs = gql`
         email: String
         location: Location
         beacons: [Beacon!]!
+        groups: [Group!]!
     }
 
     input AuthPayload {
@@ -79,6 +80,19 @@ const typeDefs = gql`
     input RegistrationInput {
         name: String!
         credentials: AuthPayload
+    }
+
+    type Group {
+        _id: ID!
+        title: String
+        shortcode: String!
+        leader: User!
+        members: [User!]!
+        beacons: [Beacon!]!
+    }
+
+    input GroupInput {
+        title: String!
     }
 
     type Query {
@@ -104,12 +118,15 @@ const typeDefs = gql`
         updateUserLocation(id: ID!, location: LocationInput!): User!
         changeLeader(beaconID: ID!, newLeaderID: ID!): Beacon!
         changeBeaconDuration(newExpiresAt: Float!, beaconID: ID!): Beacon!
+        createGroup(group: GroupInput): Group!
+        joinGroup(shortcode: String!): Group!
     }
 
     type Subscription {
         beaconLocation(id: ID!): Location
         userLocation(id: ID!): User
         beaconJoined(id: ID!): User
+        groupJoined(groupID: ID!): User
     }
 
     schema {

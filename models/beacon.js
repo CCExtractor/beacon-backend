@@ -16,6 +16,7 @@ const beaconSchema = new Schema(
         followers: [UserSchema],
         route: [LocationSchema],
         landmarks: { type: [Schema.Types.ObjectId], ref: "Landmark" },
+        group: { type: Schema.Types.ObjectId, ref: "Group" },
     },
     {
         timestamps: true,
