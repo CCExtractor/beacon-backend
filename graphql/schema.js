@@ -31,6 +31,7 @@ const typeDefs = gql`
         followers: [User!]!
         route: [Location!]!
         landmarks: [Landmark!]!
+        group: Group!
     }
 
     input BeaconInput {
