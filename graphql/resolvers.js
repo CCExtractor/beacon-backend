@@ -8,6 +8,7 @@ const Beacon = require("../models/beacon.js");
 const Group = require("../models/group.js");
 const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
+const { MongoServerError } = require("mongodb");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -128,6 +129,7 @@ const resolvers = {
 
         createGroup: async (_, { group }, { user }) => {
             console.log(group);
+            //since there is a very minute chance of shortcode colliding, we try to make the group 2 times if 1st one results in a collision.
             for (let i = 0; i < 2; i++) {
                 try {
                     const groupDoc = new Group({
@@ -141,9 +143,16 @@ const resolvers = {
                     console.log(newGroup);
                     return newGroup;
                 } catch (e) {
-                    console.log(e);
+                    //try again only if shortcode collides.
+                    if (e instanceof MongoServerError && e.keyValue["shortcode"]) {
+                        console.error(e);
+                    } else {
+                        //else return the error;
+                        return new Error(e);
+                    }
                 }
             }
+            //if shortcode collides two times then return an error saying please try again.
             return new Error("Please try again!");
         },
 
