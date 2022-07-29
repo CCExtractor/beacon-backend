@@ -5,8 +5,10 @@ const { customAlphabet } = require("nanoid");
 const geolib = require("geolib");
 const { isPointWithinRadius } = geolib;
 const Beacon = require("../models/beacon.js");
+const Group = require("../models/group.js");
 const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
+const { MongoServerError } = require("mongodb");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -17,7 +19,7 @@ const resolvers = {
     Query: {
         hello: () => "Hello world!",
         me: async (_parent, _args, { user }) => {
-            await user.populate("beacons.leader beacons.landmarks");
+            await user.populate("groups beacons.leader beacons.landmarks");
             return user;
         },
         beacon: async (_parent, { id }, { user }) => {
@@ -115,6 +117,35 @@ const resolvers = {
             return newBeacon;
         },
 
+        createGroup: async (_, { group }, { user }) => {
+            console.log(group);
+            //since there is a very minute chance of shortcode colliding, we try to make the group 2 times if 1st one results in a collision.
+            for (let i = 0; i < 2; i++) {
+                try {
+                    const groupDoc = new Group({
+                        leader: user.id,
+                        shortcode: nanoid(),
+                        ...group,
+                    });
+                    const newGroup = await groupDoc.save().then(g => g.populate("leader"));
+                    user.groups.push(newGroup.id);
+                    await user.save();
+                    console.log(newGroup);
+                    return newGroup;
+                } catch (e) {
+                    //try again only if shortcode collides.
+                    if (e instanceof MongoServerError && e.keyValue["shortcode"]) {
+                        console.error(e);
+                    } else {
+                        //else return the error;
+                        return new Error(e);
+                    }
+                }
+            }
+            //if shortcode collides two times then return an error saying please try again.
+            return new Error("Please try again!");
+        },
+
         changeBeaconDuration: async (_, { newExpiresAt, beaconID }, { user }) => {
             const beacon = await Beacon.findById(beaconID);
 
@@ -145,6 +176,26 @@ const resolvers = {
             await user.save();
 
             return beacon;
+        },
+
+        joinGroup: async (_, { shortcode }, { user, pubsub }) => {
+            const group = await Group.findOne({ shortcode });
+
+            if (!group) return new UserInputError("No group exists with that shortcode!");
+            if (group.members.includes(user.id)) return new Error("Already a member of the group!");
+            if (group.leader == user.id) return new Error("You are the leader of the group!");
+
+            group.members.push(user.id);
+            console.log("user joined group: ", user);
+            await group.save();
+            await group.populate("leader");
+
+            //publish this change over GROUP_JOINED subscription.
+            pubsub.publish("GROUP_JOINED", { groupJoined: user, groupID: group.id });
+
+            user.groups.push(group.id);
+            await user.save();
+            return group;
         },
 
         createLandmark: async (_, { landmark, beaconID }, { user }) => {
@@ -221,6 +272,12 @@ const resolvers = {
                 subscribe: withFilter(
                     (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_JOINED"]),
                     (payload, variables) => payload.beaconID === variables.id
+                ),
+            },
+            groupJoined: {
+                subscribe: withFilter(
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["GROUP_JOINED"]),
+                    (payload, variables) => payload.groupID === variables.groupID
                 ),
             },
         },

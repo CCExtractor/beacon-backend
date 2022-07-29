@@ -12,6 +12,7 @@ const UserSchema = new Schema(
         // store most recent location
         location: LocationSchema,
         beacons: { type: [Schema.Types.ObjectId], ref: "Beacon" },
+        groups: { type: [Schema.Types.ObjectId], ref: "Group" },
     },
     {
         timestamps: true,
