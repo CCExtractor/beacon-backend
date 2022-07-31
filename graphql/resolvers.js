@@ -25,8 +25,8 @@ const resolvers = {
         beacon: async (_parent, { id }, { user }) => {
             const beacon = await Beacon.findById(id).populate("landmarks leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
-            // return beacon iff user in beacon
-            if (beacon.leader.id === user.id || beacon.followers.includes(user))
+            // return beacon iff user not in beacon
+            if (beacon.leader.id != user.id && !beacon.followers.includes(user))
                 return new Error("User should be a part of beacon");
             return beacon;
         },
@@ -292,7 +292,7 @@ const resolvers = {
             },
             userLocation: {
                 subscribe: withFilter(
-                    (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["USER_LOCATION"]),
                     (payload, variables, { user }) => {
                         return payload.beaconID === variables.id && payload.userLocation.id !== user.id; // account for self updates
                     }
