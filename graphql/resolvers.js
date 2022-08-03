@@ -26,7 +26,7 @@ const resolvers = {
             const beacon = await Beacon.findById(id).populate("landmarks leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             // return error iff user not in beacon
-            if (beacon.leader.id != user.id && !beacon.followers.includes(user))
+            if (beacon.leader.id !== user.id && !beacon.followers.includes(user))
                 return new Error("User should be a part of beacon");
             return beacon;
         },
