@@ -110,7 +110,7 @@ const resolvers = {
             //the group to which this beacon will belong to.
             const group = await Group.findById(groupID);
             if (!group) return new UserInputError("No group exists with that id.");
-            if (!group.members.includes(user.id) && group.leader != user.id)
+            if (!group.members.includes(user.id) && group.leader !== user.id)
                 return new Error("User is not a part of the group!");
 
             const beaconDoc = new Beacon({
@@ -175,19 +175,16 @@ const resolvers = {
 
             if (!beacon) return new UserInputError("No beacon exists with that shortcode.");
             if (beacon.expiresAt < Date.now()) return new Error("Beacon has expired");
-            let isFollowing = false;
             for (let i = 0; i < beacon.followers.length; i++)
-                if (beacon.followers[i].id == user.id) {
-                    isFollowing = true;
-                    break;
+                if (beacon.followers[i].id === user.id) {
+                    return new Error("Already following the beacon!");
                 }
-            if (isFollowing) return new Error("Already following the beacon!");
-            if (beacon.leader == user.id) return new Error("Already leading the beacon!");
+            if (beacon.leader === user.id) return new Error("Already leading the beacon!");
 
             const group = await Group.findById(beacon.group);
             if (!group) return new UserInputError("No group exists with that id.");
             //if the user doesnt belong to the group, add him
-            if (group.members.includes(user.id) == false && group.leader != user.id) {
+            if (!group.members.includes(user.id) && group.leader !== user.id) {
                 group.members.push(user.id);
                 user.groups.push(group.id);
                 //publish over groupJoined Sub.
@@ -213,7 +210,7 @@ const resolvers = {
 
             if (!group) return new UserInputError("No group exists with that shortcode!");
             if (group.members.includes(user.id)) return new Error("Already a member of the group!");
-            if (group.leader == user.id) return new Error("You are the leader of the group!");
+            if (group.leader === user.id) return new Error("You are the leader of the group!");
 
             group.members.push(user.id);
             console.log("user joined group: ", user);
