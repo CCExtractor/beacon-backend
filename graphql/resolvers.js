@@ -30,9 +30,11 @@ const resolvers = {
                 return new Error("User should be a part of beacon");
             return beacon;
         },
-        group: async (_parent, { id }) => {
+        group: async (_parent, { id }, { user }) => {
             const group = await Group.findById(id).populate("leader members beacons");
             if (!group) return new UserInputError("No group exists with that id.");
+            if (group.leader.id !== user.id && !group.members.includes(user))
+                return new Error("User should be a part of the group");
             return group;
         },
         nearbyBeacons: async (_, { location }) => {
@@ -175,12 +177,11 @@ const resolvers = {
 
             if (!beacon) return new UserInputError("No beacon exists with that shortcode.");
             if (beacon.expiresAt < Date.now()) return new Error("Beacon has expired");
+            if (beacon.leader === user.id) return new Error("Already leading the beacon!");
             for (let i = 0; i < beacon.followers.length; i++)
                 if (beacon.followers[i].id === user.id) {
                     return new Error("Already following the beacon!");
                 }
-            if (beacon.leader === user.id) return new Error("Already leading the beacon!");
-
             const group = await Group.findById(beacon.group);
             if (!group) return new UserInputError("No group exists with that id.");
             //if the user doesnt belong to the group, add him
