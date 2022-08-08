@@ -33,6 +33,7 @@ const resolvers = {
         group: async (_parent, { id }, { user }) => {
             const group = await Group.findById(id).populate("leader members beacons");
             if (!group) return new UserInputError("No group exists with that id.");
+            // return error iff user not in group
             if (group.leader.id !== user.id && !group.members.includes(user))
                 return new Error("User should be a part of the group");
             return group;
