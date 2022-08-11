@@ -25,10 +25,18 @@ const resolvers = {
         beacon: async (_parent, { id }, { user }) => {
             const beacon = await Beacon.findById(id).populate("landmarks leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
-            // return beacon iff user in beacon
-            if (beacon.leader.id === user.id || beacon.followers.includes(user))
+            // return error iff user not in beacon
+            if (beacon.leader.id !== user.id && !beacon.followers.includes(user))
                 return new Error("User should be a part of beacon");
             return beacon;
+        },
+        group: async (_parent, { id }, { user }) => {
+            const group = await Group.findById(id).populate("leader members beacons");
+            if (!group) return new UserInputError("No group exists with that id.");
+            // return error iff user not in group
+            if (group.leader.id !== user.id && !group.members.includes(user))
+                return new Error("User should be a part of the group");
+            return group;
         },
         nearbyBeacons: async (_, { location }) => {
             // get active beacons
@@ -101,19 +109,25 @@ const resolvers = {
             );
         },
 
-        createBeacon: async (_, { beacon }, { user }) => {
-            console.log(beacon);
+        createBeacon: async (_, { beacon, groupID }, { user }) => {
+            //the group to which this beacon will belong to.
+            const group = await Group.findById(groupID);
+            if (!group) return new UserInputError("No group exists with that id.");
+            if (!group.members.includes(user.id) && group.leader != user.id)
+                return new Error("User is not a part of the group!");
 
             const beaconDoc = new Beacon({
                 leader: user.id,
                 shortcode: nanoid(),
                 location: beacon.startLocation,
+                group: group.id,
                 ...beacon,
             });
             const newBeacon = await beaconDoc.save().then(b => b.populate("leader"));
             user.beacons.push(newBeacon.id);
+            group.beacons.push(newBeacon.id);
             await user.save();
-
+            await group.save();
             return newBeacon;
         },
 
@@ -164,7 +178,22 @@ const resolvers = {
 
             if (!beacon) return new UserInputError("No beacon exists with that shortcode.");
             if (beacon.expiresAt < Date.now()) return new Error("Beacon has expired");
-            if (beacon.followers.includes(user)) return new Error("Already following the beacon");
+            if (beacon.leader == user.id) return new Error("Already leading the beacon!");
+            for (let i = 0; i < beacon.followers.length; i++)
+                if (beacon.followers[i].id === user.id) {
+                    return new Error("Already following the beacon!");
+                }
+            const group = await Group.findById(beacon.group);
+            if (!group) return new UserInputError("No group exists with that id.");
+            //if the user doesnt belong to the group, add him
+            if (!group.members.includes(user.id) && group.leader != user.id) {
+                group.members.push(user.id);
+                user.groups.push(group.id);
+                //publish over groupJoined Sub.
+                pubsub.publish("GROUP_JOINED", { groupJoined: user, groupID: group.id });
+
+                await group.save();
+            }
 
             beacon.followers.push(user);
             console.log("user joined beacon: ", user);
@@ -262,7 +291,7 @@ const resolvers = {
             },
             userLocation: {
                 subscribe: withFilter(
-                    (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["USER_LOCATION"]),
                     (payload, variables, { user }) => {
                         return payload.beaconID === variables.id && payload.userLocation.id !== user.id; // account for self updates
                     }

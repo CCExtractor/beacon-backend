@@ -31,6 +31,7 @@ const typeDefs = gql`
         followers: [User!]!
         route: [Location!]!
         landmarks: [Landmark!]!
+        group: Group!
     }
 
     input BeaconInput {
@@ -97,6 +98,7 @@ const typeDefs = gql`
 
     type Query {
         beacon(id: ID!): Beacon!
+        group(id: ID!): Group!
         nearbyBeacons(location: LocationInput!): [Beacon!]!
         me: User
         hello: String
@@ -106,7 +108,7 @@ const typeDefs = gql`
         """
         if start time not supplied, default is Date.now
         """
-        createBeacon(beacon: BeaconInput): Beacon!
+        createBeacon(beacon: BeaconInput, groupID: String!): Beacon!
         createLandmark(landmark: LandmarkInput, beaconID: ID!): Landmark!
         register(user: RegistrationInput): User!
         """
