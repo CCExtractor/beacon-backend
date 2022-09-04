@@ -5,6 +5,11 @@ useDotenv: true
 provider:
     name: aws
     runtime: nodejs14.x
+    #allows lambda function to access ec2
+    iamRoleStatements:
+        - Effect: "Allow"
+          Action: "*"
+          Resource: "*"
 functions:
     graphql:
         # this is formatted as <FILENAME>.<HANDLER>

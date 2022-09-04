@@ -18,7 +18,18 @@ const options = {
 
 const manageInstance = async () => {
     const status = await ec2Client.send(new DescribeInstancesCommand(params));
-    const state = status["Reservations"][0]["Instances"]["State"]["Status"];
+    const instances = status["Reservations"][0]["Instances"];
+    let state;
+    for (let i = 0; i < instances.length; i++) {
+        if (instances[i]["InstanceId"] === process.env.INSTANCE) {
+            state = instances[i]["State"]["Name"];
+            break;
+        }
+    }
+    if (state == undefined) {
+        console.log("Error", "Wrong instance ID");
+        return;
+    }
     const currentTime = new Date();
     const beacons = await Beacon.find({
         $or: [{ startsAt: { $gte: currentTime } }, { expiresAt: { $gte: currentTime } }],
@@ -35,7 +46,7 @@ const manageInstance = async () => {
             return o.startsAt;
         })
     );
-    const earliestEnd = Math.min.apply(
+    const latestEnd = Math.max.apply(
         Math,
         beacons.map(function (o) {
             return o.expiresAt;
@@ -50,7 +61,7 @@ const manageInstance = async () => {
             return data;
         }
     }
-    if (earliestEnd < currentTime) {
+    if (latestEnd < currentTime) {
         const data = await ec2Client.send(new StopInstancesCommand(params));
         console.log("ended instance", data.StoppingInstances);
         return data;
