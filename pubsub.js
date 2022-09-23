@@ -5,6 +5,7 @@ const options = {
     host: process.env.REDIS_URL,
     port: process.env.REDIS_PORT,
     password: process.env.REDIS_AUTH,
+    username: process.env.REDIS_USERNAME,
     retryStrategy: times => {
         // reconnect after
         return Math.min(times * 50, 2000);
