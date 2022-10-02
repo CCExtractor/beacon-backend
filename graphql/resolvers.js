@@ -26,8 +26,13 @@ const resolvers = {
             const beacon = await Beacon.findById(id).populate("landmarks leader");
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             // return error iff user not in beacon
-            if (beacon.leader.id !== user.id && !beacon.followers.includes(user))
-                return new Error("User should be a part of beacon");
+            let flag = false;
+            for (let i = 0; i < beacon.followers.length; i++)
+                if (beacon.followers[i].id === user.id) {
+                    flag = true;
+                    break;
+                }
+            if (beacon.leader.id !== user.id && !flag) return new Error("User should be a part of beacon");
             return beacon;
         },
         group: async (_parent, { id }, { user }) => {
