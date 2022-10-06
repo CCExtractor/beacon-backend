@@ -34,7 +34,7 @@ then
     mode="dev"
 fi
 
-#configue the dedault 
+#configure the credentials 
 serverless config credentials \
   --provider aws \
   --key $AK \
