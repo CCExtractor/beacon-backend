@@ -24,8 +24,11 @@ const server = new ApolloServer({
         const user = req?.user ? await User.findById(req.user.sub).populate("beacons") : null;
         return { user, pubsub };
     },
+    stopGracePeriodMillis: Infinity,
+    stopOnTerminationSignals: false,
     subscriptions: {
-        path: "/subscriptions",
+        path: "/graphql",
+        keepAlive: 9000,
         onConnect: async connectionParams => {
             console.log("Client connected");
             const authorization = connectionParams["Authorization"];

@@ -42,12 +42,13 @@ const options = {
 const server = new ApolloServer({
     schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
     // schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
-    context: async ({ context, express }) => {
+    context: async ({ /*event*/ context, express }) => {
         // initialize context even if it comes from subscription connection
         // TODO: cleanup
         // if (connection) {
         //     return { user: connection.context.user };
         // }
+        // console.log(event);
         context.callbackWaitsForEmptyEventLoop = false;
         const { req } = express;
         const user = req?.user ? await User.findById(req.user.sub).populate("beacons") : null;
@@ -114,9 +115,9 @@ exports.handler = async (event, context) => {
     context.callbackWaitsForEmptyEventLoop = false;
     if (!conn) {
         console.log("connecting to db");
-        conn = mongoose.connect(uri, options).then(() => mongoose);
+        conn = await mongoose.connect(uri, options).then(() => mongoose);
         console.log("just connected to db");
-        await conn;
     }
+
     return graphqlHandler(event, context);
 };
