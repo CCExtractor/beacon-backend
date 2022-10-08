@@ -43,7 +43,7 @@ serverless config credentials \
   -o
 
 if [ $? -ne 0 ]; then
-    echo "Could'nt update your credentials, please check the logs!"
+    echo "Couldn't update your credentials, please check the logs!"
     echo "Trying serverless deploy..."
 fi
 
