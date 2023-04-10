@@ -23,7 +23,7 @@
     "@aws-sdk/client-ec2": "^3.27.0",
     "apollo-server-express": "^2.7.0",
     "apollo-server-lambda": "^3.1.2",
-    "aws-sdk": "^2.971.0",
+    "aws-sdk": "^2.1354.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.0.1",
     "express-jwt": "^6.0.0",
