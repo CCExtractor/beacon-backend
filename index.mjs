@@ -21,8 +21,9 @@ const server = new ApolloServer({
         if (connection) {
             return { user: connection.context.user, pubsub };
         }
+        const otp = req?.headers?.otp || (connection?.context?.headers?.otp ? connection.context.headers.otp : null);
         const user = req?.user ? await User.findById(req.user.sub).populate("beacons") : null;
-        return { user, pubsub };
+        return { user, pubsub, otp };
     },
     stopGracePeriodMillis: Infinity,
     stopOnTerminationSignals: false,

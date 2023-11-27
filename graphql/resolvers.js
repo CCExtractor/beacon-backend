@@ -9,6 +9,7 @@ const Group = require("../models/group.js");
 const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
 const { MongoServerError } = require("mongodb");
+const { sendEmail } = require('../utils/send_email.js');
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -58,6 +59,37 @@ const resolvers = {
     },
 
     Mutation: {
+
+        requestPasswordReset: async (_parent, { email }) => {
+            if (!email) return new UserInputError("Email is required to reset password");
+            const user = await User.findOne({ email });
+            if (!user) return new UserInputError("User with this email not exist");
+            const otp = sendEmail(email);
+            const encryptOtp = await bcrypt.hash(otp, 10);
+            return { message: "Otp send successfully", success: true, encryptOtp };
+        },
+
+        verifyPasswordResetOtp: async (_parent, { userOtp }, { otp }) => {
+            if (!userOtp || !otp) return new UserInputError("OTP is required");
+            const verified = await bcrypt.compare(userOtp, otp);
+            if (!verified) return new UserInputError("OTP doesn't match");
+            return { message: "Otp matched successfully", success: true };
+        },
+
+        resetPassword: async (_parent, { credentials }) => {
+            const { email, password } = credentials;
+            if (!email) return new UserInputError("Email is required");
+            if (!password) return new UserInputError("Password is required");
+            const user = await User.findOne({ email });
+            if (!user) return new UserInputError("User with this email does not exist");
+            const encryptNewPass = await bcrypt.hash(password, 10);
+            await User.updateOne(
+                { email: email },
+                { $set: { password: encryptNewPass } }
+            );
+            return { message: "Password changed successfully", success: true };
+        },
+
         register: async (_parent, { user }) => {
             const { name, credentials } = user;
 

@@ -104,6 +104,17 @@ const typeDefs = gql`
         hello: String
     }
 
+    type requestPasswordResetResponse {
+        message: String!
+        success: Boolean!
+        encryptOtp: String!
+      }
+
+      type PasswordResetResponse {
+        message: String!
+        success: Boolean!
+      }
+
     type Mutation {
         """
         if start time not supplied, default is Date.now
@@ -122,6 +133,9 @@ const typeDefs = gql`
         changeBeaconDuration(newExpiresAt: Float!, beaconID: ID!): Beacon!
         createGroup(group: GroupInput): Group!
         joinGroup(shortcode: String!): Group!
+        requestPasswordReset(email: String!): requestPasswordResetResponse!
+        verifyPasswordResetOtp(userOtp: String!): PasswordResetResponse!
+        resetPassword(credentials: AuthPayload): PasswordResetResponse!
     }
 
     type Subscription {
