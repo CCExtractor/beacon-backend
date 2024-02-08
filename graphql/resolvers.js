@@ -9,7 +9,6 @@ const Group = require("../models/group.js");
 const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
 const { MongoServerError } = require("mongodb");
-const user = require("../models/user.js");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -37,12 +36,20 @@ const resolvers = {
             return beacon;
         },
         group: async (_parent, { id }, { user }) => {
-            const group = await Group.findById(id).populate("leader members beacons");
-            if (!group) return new UserInputError("No group exists with that id.");
-            // return error iff user not in group
-            if (group.leader.id !== user.id && !group.members.includes(user))
-                return new Error("User should be a part of the group");
-            return group;
+            const group = await Group.findById(id).populate('leader members').populate({
+                path: 'beacons',
+                populate: {
+                  path: 'leader',
+                },
+              });
+          
+              if (!group) return new UserInputError("No group exists with that id.");
+              // Check if the user is part of the group
+              if (group.leader.id !== user.id && !group.members.includes(user))
+                throw new Error("User should be a part of the group");
+          
+              console.log(`group: ${group}`);
+              return group;
         },
         nearbyBeacons: async (_, { location }) => {
             // get active beacons
