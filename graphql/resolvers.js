@@ -36,20 +36,28 @@ const resolvers = {
             return beacon;
         },
         group: async (_parent, { id }, { user }) => {
-            const group = await Group.findById(id).populate('leader members').populate({
-                path: 'beacons',
-                populate: {
-                  path: 'leader',
-                },
-              });
-          
-              if (!group) return new UserInputError("No group exists with that id.");
-              // Check if the user is part of the group
-              if (group.leader.id !== user.id && !group.members.includes(user))
+            const group = await Group.findById(id)
+                .populate('leader members')
+                .populate({
+                    path: 'beacons',
+                    populate: {
+                        path: 'leader',
+                    },
+                });
+
+            if (!group) {
+                return new UserInputError("No group exists with that id.");
+            }
+
+            console.log(group);
+            console.log(group.members);
+
+            // Check if the user is part of the group
+            if (group.leader.id !== user.id && !group.members.some(member => member.id === user.id)) {
                 throw new Error("User should be a part of the group");
-          
-              console.log(`group: ${group}`);
-              return group;
+            }
+
+            return group;
         },
         nearbyBeacons: async (_, { location }) => {
             // get active beacons
