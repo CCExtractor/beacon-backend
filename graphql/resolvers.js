@@ -45,18 +45,11 @@ const resolvers = {
                     },
                 });
 
-            if (!group) {
-                return new UserInputError("No group exists with that id.");
-            }
-
-            console.log(group);
-            console.log(group.members);
+            if (!group) return new UserInputError("No group exists with that id.");
 
             // Check if the user is part of the group
-            if (group.leader.id !== user.id && !group.members.some(member => member.id === user.id)) {
-                throw new Error("User should be a part of the group");
-            }
-
+            if (group.leader.id !== user.id && !group.members.some(member => member.id === user.id)) throw new Error("User should be a part of the group");
+            
             return group;
         },
         nearbyBeacons: async (_, { location }) => {
