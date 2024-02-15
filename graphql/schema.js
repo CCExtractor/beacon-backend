@@ -28,7 +28,6 @@ const typeDefs = gql`
         leader: [ID!]!
         """
         leader: User!
-        showAdminUserName: Boolean!
         followers: [User!]!
         route: [Location!]!
         landmarks: [Landmark!]!
@@ -40,7 +39,6 @@ const typeDefs = gql`
         """
         default is Date.now
         """
-        showAdminUserName: Boolean
         startsAt: Float
         expiresAt: Float!
         startLocation: LocationInput!
@@ -106,7 +104,6 @@ const typeDefs = gql`
         hello: String
     }
 
-
     input oAuthInput {
         email: String
         name: String
@@ -138,7 +135,6 @@ const typeDefs = gql`
         userLocation(id: ID!): User
         beaconJoined(id: ID!): User
         groupJoined(groupID: ID!): User
-        groupUpdate(groupId: ID!): ID!
     }
 
     schema {
