@@ -17,6 +17,7 @@ const beaconSchema = new Schema(
         route: [LocationSchema],
         landmarks: { type: [Schema.Types.ObjectId], ref: "Landmark" },
         group: { type: Schema.Types.ObjectId, ref: "Group" },
+        showAdminUserName: { type: Boolean, default: true },
     },
     {
         timestamps: true,
