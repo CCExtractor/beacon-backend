@@ -104,7 +104,6 @@ const typeDefs = gql`
         hello: String
     }
 
-
     input oAuthInput {
         email: String
         name: String

@@ -80,7 +80,6 @@ const resolvers = {
         },
 
         oAuth: async (_parent, { userInput }) => {
-
             const { name, email } = userInput;
             let user = await User.findOne({ email });
 
@@ -106,7 +105,6 @@ const resolvers = {
             return token;
         },
 
-
         login: async (_parent, { id, credentials }) => {
             if (!id && !credentials) return new UserInputError("One of ID and credentials required");
 
@@ -123,7 +121,7 @@ const resolvers = {
             let anon = true;
 
             if (credentials) {
-                const valid = (email === user.email && bcrypt.compare(password, user.password));
+                const valid = email === user.email && bcrypt.compare(password, user.password);
                 if (!valid) return new AuthenticationError("credentials don't match");
                 anon = false;
             }
