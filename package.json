@@ -42,6 +42,7 @@
     "eslint": "^8.18.0",
     "prettier": "^2.3.1",
     "serverless-dotenv-plugin": "^3.9.0",
-    "serverless-offline": "^8.0.0"
+    "serverless-offline": "^8.0.0",
+    "typescript": "^5.3.3"
   }
 }
