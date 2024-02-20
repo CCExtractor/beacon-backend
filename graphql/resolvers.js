@@ -20,8 +20,13 @@ const resolvers = {
     Query: {
         hello: () => "Hello world!",
         me: async (_parent, _args, { user }) => {
-            const result= await user.populate("groups beacons.leader beacons.landmarks");
-            console.log(result);
+            const result = await user
+                .populate({
+                    path: "groups",
+                    populate: {
+                        path: "leader members",
+                    }
+                });
             return user;
         },
         beacon: async (_parent, { id }, { user }) => {
