@@ -14,7 +14,7 @@ import { permissions } from "./permissions/index.js";
 import pubsub from "./pubsub.js";
 
 const server = new ApolloServer({
-    schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }),permissions),
+    schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
     // schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
     context: async ({ req, connection }) => {
         // initialize context even if it comes from subscription connection
@@ -81,7 +81,7 @@ mongoose
             { port: 4000 },
             console.log(
                 `Server ready at http://localhost:4000${server.graphqlPath}\n` +
-                    `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
+                `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
             )
         )
     )
