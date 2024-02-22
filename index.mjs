@@ -81,7 +81,7 @@ mongoose
             { port: 4000 },
             console.log(
                 `Server ready at http://localhost:4000${server.graphqlPath}\n` +
-                    `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
+                `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
             )
         )
     )

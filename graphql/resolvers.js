@@ -73,8 +73,35 @@ const resolvers = {
                     password: await bcrypt.hash(credentials.password, 10),
                 }),
             });
+            console.log(newUser);
             const userObj = await newUser.save();
             return userObj;
+        },
+
+        oAuth: async (_parent, { userInput }) => {
+            const { name, email } = userInput;
+            let user = await User.findOne({ email });
+
+            if (!user) {
+                const newUser = new User({ name, email });
+                user = await newUser.save();
+            }
+
+            const anon = false;
+            const tokenPayload = {
+                "https://beacon.ccextractor.org": {
+                    anon,
+                    ...(email && { email }),
+                },
+            };
+
+            const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+                algorithm: "HS256",
+                subject: user._id.toString(),
+                expiresIn: "7d",
+            });
+
+            return token;
         },
 
         login: async (_parent, { id, credentials }) => {
@@ -93,11 +120,10 @@ const resolvers = {
             let anon = true;
 
             if (credentials) {
-                const valid = email === user.email && (await bcrypt.compare(password, user.password));
+                const valid = email === user.email && bcrypt.compare(password, user.password);
                 if (!valid) return new AuthenticationError("credentials don't match");
                 anon = false;
             }
-
             return jwt.sign(
                 {
                     "https://beacon.ccextractor.org": {
