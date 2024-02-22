@@ -19,13 +19,12 @@ const resolvers = {
     Query: {
         hello: () => "Hello world!",
         me: async (_parent, _args, { user }) => {
-            const result = await user
-                .populate({
-                    path: "groups",
-                    populate: {
-                        path: "leader members",
-                    }
-                });
+            const result = await user.populate({
+                path: "groups",
+                populate: {
+                    path: "leader members",
+                },
+            });
             return user;
         },
         beacon: async (_parent, { id }, { user }) => {
@@ -42,17 +41,20 @@ const resolvers = {
             return beacon;
         },
         group: async (_parent, { id }, { user }) => {
-            const group = await Group.findById(id).populate('leader members').populate({
-                path: 'beacons',
-                populate: {
-                    path: 'leader',
-                },
-            });
+            const group = await Group.findById(id)
+                .populate("leader members")
+                .populate({
+                    path: "beacons",
+                    populate: {
+                        path: "leader",
+                    },
+                });
 
             if (!group) return new UserInputError("No group exists with that id.");
 
             // Check if the user is part of the group
-            if (group.leader.id !== user.id && !group.members.some(member => member.id === user.id)) throw new Error("User should be a part of the group");
+            if (group.leader.id !== user.id && !group.members.some(member => member.id === user.id))
+                throw new Error("User should be a part of the group");
 
             return group;
         },
@@ -92,7 +94,6 @@ const resolvers = {
         },
 
         oAuth: async (_parent, { userInput }) => {
-
             const { name, email } = userInput;
             let user = await User.findOne({ email });
 
@@ -118,7 +119,6 @@ const resolvers = {
             return token;
         },
 
-
         login: async (_parent, { id, credentials }) => {
             if (!id && !credentials) return new UserInputError("One of ID and credentials required");
 
@@ -135,7 +135,7 @@ const resolvers = {
             let anon = true;
 
             if (credentials) {
-                const valid = (email === user.email && bcrypt.compare(password, user.password));
+                const valid = email === user.email && bcrypt.compare(password, user.password);
                 if (!valid) return new AuthenticationError("credentials don't match");
                 anon = false;
             }
