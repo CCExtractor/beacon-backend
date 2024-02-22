@@ -8,6 +8,7 @@ const permissions = shield({
     },
     Mutation: {
         "*": isAuthenticated,
+        oAuth: not(isAuthenticated),
         register: not(isAuthenticated),
         login: not(isAuthenticated),
     },

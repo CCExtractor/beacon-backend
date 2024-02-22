@@ -14,7 +14,7 @@ import { permissions } from "./permissions/index.js";
 import pubsub from "./pubsub.js";
 
 const server = new ApolloServer({
-    schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
+    schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }),permissions),
     // schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
     context: async ({ req, connection }) => {
         // initialize context even if it comes from subscription connection

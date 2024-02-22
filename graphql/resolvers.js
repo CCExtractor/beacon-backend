@@ -1,4 +1,4 @@
-const { AuthenticationError, UserInputError, withFilter } = require("apollo-server-express");
+const { AuthenticationError, UserInputError, withFilter, PubSub } = require("apollo-server-express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { customAlphabet } = require("nanoid");
@@ -19,7 +19,12 @@ const resolvers = {
     Query: {
         hello: () => "Hello world!",
         me: async (_parent, _args, { user }) => {
-            await user.populate("groups beacons.leader beacons.landmarks");
+            const result = await user.populate({
+                path: "groups",
+                populate: {
+                    path: "leader members",
+                },
+            });
             return user;
         },
         beacon: async (_parent, { id }, { user }) => {
@@ -36,11 +41,21 @@ const resolvers = {
             return beacon;
         },
         group: async (_parent, { id }, { user }) => {
-            const group = await Group.findById(id).populate("leader members beacons");
+            const group = await Group.findById(id)
+                .populate("leader members")
+                .populate({
+                    path: "beacons",
+                    populate: {
+                        path: "leader",
+                    },
+                });
+
             if (!group) return new UserInputError("No group exists with that id.");
-            // return error iff user not in group
-            if (group.leader.id !== user.id && !group.members.includes(user))
-                return new Error("User should be a part of the group");
+
+            // Check if the user is part of the group
+            if (group.leader.id !== user.id && !group.members.some(member => member.id === user.id))
+                throw new Error("User should be a part of the group");
+
             return group;
         },
         nearbyBeacons: async (_, { location }) => {
@@ -73,8 +88,35 @@ const resolvers = {
                     password: await bcrypt.hash(credentials.password, 10),
                 }),
             });
+            console.log(newUser);
             const userObj = await newUser.save();
             return userObj;
+        },
+
+        oAuth: async (_parent, { userInput }) => {
+            const { name, email } = userInput;
+            let user = await User.findOne({ email });
+
+            if (!user) {
+                const newUser = new User({ name, email });
+                user = await newUser.save();
+            }
+
+            const anon = false;
+            const tokenPayload = {
+                "https://beacon.ccextractor.org": {
+                    anon,
+                    ...(email && { email }),
+                },
+            };
+
+            const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+                algorithm: "HS256",
+                subject: user._id.toString(),
+                expiresIn: "7d",
+            });
+
+            return token;
         },
 
         login: async (_parent, { id, credentials }) => {
@@ -93,11 +135,10 @@ const resolvers = {
             let anon = true;
 
             if (credentials) {
-                const valid = email === user.email && (await bcrypt.compare(password, user.password));
+                const valid = email === user.email && bcrypt.compare(password, user.password);
                 if (!valid) return new AuthenticationError("credentials don't match");
                 anon = false;
             }
-
             return jwt.sign(
                 {
                     "https://beacon.ccextractor.org": {
@@ -129,6 +170,7 @@ const resolvers = {
                 ...beacon,
             });
             const newBeacon = await beaconDoc.save().then(b => b.populate("leader"));
+            console.log(newBeacon);
             user.beacons.push(newBeacon.id);
             group.beacons.push(newBeacon.id);
             await user.save();

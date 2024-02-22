@@ -28,6 +28,7 @@ const typeDefs = gql`
         leader: [ID!]!
         """
         leader: User!
+        showAdminName: Boolean!
         followers: [User!]!
         route: [Location!]!
         landmarks: [Landmark!]!
@@ -39,6 +40,7 @@ const typeDefs = gql`
         """
         default is Date.now
         """
+        showAdminName: Boolean
         startsAt: Float
         expiresAt: Float!
         startLocation: LocationInput!
@@ -104,6 +106,11 @@ const typeDefs = gql`
         hello: String
     }
 
+    input oAuthInput {
+        email: String
+        name: String
+    }
+
     type Mutation {
         """
         if start time not supplied, default is Date.now
@@ -115,6 +122,7 @@ const typeDefs = gql`
         one of ID or credentials required (ID for anon)
         """
         login(id: ID, credentials: AuthPayload): String
+        oAuth(userInput: oAuthInput): String
         joinBeacon(shortcode: String!): Beacon!
         updateBeaconLocation(id: ID!, location: LocationInput!): Beacon!
         updateUserLocation(id: ID!, location: LocationInput!): User!
@@ -129,6 +137,7 @@ const typeDefs = gql`
         userLocation(id: ID!): User
         beaconJoined(id: ID!): User
         groupJoined(groupID: ID!): User
+        groupUpdate(groupId: ID!): ID!
     }
 
     schema {
