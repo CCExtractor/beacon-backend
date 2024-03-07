@@ -12,6 +12,10 @@ import resolvers from "./graphql/resolvers.js";
 import { User } from "./models/user.js";
 import { permissions } from "./permissions/index.js";
 import pubsub from "./pubsub.js";
+import { init as initDeleteExpiredBeacons } from './cron-jobs/deleteExpiredBeacons.js';
+
+
+initDeleteExpiredBeacons();
 
 const server = new ApolloServer({
     schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }),permissions),
@@ -73,9 +77,9 @@ const httpServer = http.createServer(app);
 server.installSubscriptionHandlers(httpServer);
 
 const uri = process.env.DB;
-const options = { useNewUrlParser: true, useUnifiedTopology: true };
+
 mongoose
-    .connect(uri, options)
+    .connect(uri)
     .then(() =>
         httpServer.listen(
             { port: 4000 },

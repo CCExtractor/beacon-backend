@@ -100,7 +100,7 @@ const typeDefs = gql`
 
     type Query {
         beacon(id: ID!): Beacon!
-        group(id: ID!): Group!
+        group(id: ID!, page: Int, pageSize: Int): Group!
         nearbyBeacons(location: LocationInput!): [Beacon!]!
         me: User
         hello: String
@@ -127,9 +127,10 @@ const typeDefs = gql`
         updateBeaconLocation(id: ID!, location: LocationInput!): Beacon!
         updateUserLocation(id: ID!, location: LocationInput!): User!
         changeLeader(beaconID: ID!, newLeaderID: ID!): Beacon!
-        changeBeaconDuration(newExpiresAt: Float!, beaconID: ID!): Beacon!
+        changeBeaconDuration(newExpiresAt: Float!, newStartsAt: Float!, beaconID: ID!): Beacon!
         createGroup(group: GroupInput): Group!
         joinGroup(shortcode: String!): Group!
+        deleteBeacon(beaconId: ID!, groupId: ID): Boolean!
     }
 
     type Subscription {

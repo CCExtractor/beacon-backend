@@ -40,10 +40,14 @@ const resolvers = {
             if (beacon.leader.id !== user.id && !flag) return new Error("User should be a part of beacon");
             return beacon;
         },
-        group: async (_parent, { id }, { user }) => {
+        group: async (_parent, { id, page, pageSize }, { user }) => {
             const group = await Group.findById(id)
                 .populate("leader members")
                 .populate({
+                    options: {
+                        skip: (page - 1) * pageSize,
+                        limit: pageSize,
+                    },
                     path: "beacons",
                     populate: {
                         path: "leader",
@@ -207,13 +211,13 @@ const resolvers = {
             return new Error("Please try again!");
         },
 
-        changeBeaconDuration: async (_, { newExpiresAt, beaconID }, { user }) => {
+        changeBeaconDuration: async (_, { newStartsAt, newExpiresAt, beaconID }, { user }) => {
             const beacon = await Beacon.findById(beaconID);
 
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             if (beacon.leader != user.id) return new Error("Only the leader is allowed to change the beacon duration.");
             if (beacon.startsAt.getTime() > newExpiresAt) return Error("Beacon can not expire before it has started.");
-
+            beacon.startsAt = newStartsAt;
             beacon.expiresAt = newExpiresAt;
             await beacon.save();
 
@@ -222,6 +226,8 @@ const resolvers = {
 
         joinBeacon: async (_, { shortcode }, { user, pubsub }) => {
             const beacon = await Beacon.findOne({ shortcode });
+
+            console.log(`Beacon leader: ${beacon.leader}`);
 
             if (!beacon) return new UserInputError("No beacon exists with that shortcode.");
             if (beacon.expiresAt < Date.now()) return new Error("Beacon has expired");
@@ -252,6 +258,30 @@ const resolvers = {
             await user.save();
 
             return beacon;
+        },
+
+        deleteBeacon: async (_parent, { beaconId, groupId }, { user, pubsub }) => {
+            const beacon = await Beacon.findById(beaconId);
+
+            if (beacon === null) return new UserInputError("No beacon exists with this id!");
+
+            if (beacon.leader != user.id) return new Error("Only the beacon leader is allowed to delete the beacon!");
+
+            const landmarkIds = beacon.landmarks;
+
+            // Deleting landmarks associated with the beacon
+            await Landmark.deleteMany({ _id: { $in: landmarkIds } });
+
+            // deleting beacon
+            const deletedBeacon = await Beacon.findByIdAndDelete(beaconId);
+
+            // deleting beacon id from Group
+            await Group.updateMany({ _id: groupId, beacons: beaconId }, { $pull: { beacons: beaconId } });
+
+            // deleting beacon id from User model
+            await User.updateMany({ groups: groupId, beacons: beaconId }, { $pull: { beacons: beaconId } });
+
+            return !!deletedBeacon;
         },
 
         joinGroup: async (_, { shortcode }, { user, pubsub }) => {
@@ -315,7 +345,6 @@ const resolvers = {
 
             return user;
         },
-
         changeLeader: async (_, { beaconID, newLeaderID }, { user }) => {
             const beacon = await Beacon.findById(beaconID);
             if (!beacon) return new UserInputError("No beacon exists with that id.");
