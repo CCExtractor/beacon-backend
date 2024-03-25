@@ -9,6 +9,7 @@ const Group = require("../models/group.js");
 const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
 const { MongoServerError } = require("mongodb");
+const pubsub = require("../pubsub.js");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
@@ -73,7 +74,10 @@ const resolvers = {
                     password: await bcrypt.hash(credentials.password, 10),
                 }),
             });
+
             const userObj = await newUser.save();
+            pubsub.publish("USER_STATUS_CHANGED", { userId: user.id, user });
+
             return userObj;
         },
 
@@ -97,6 +101,8 @@ const resolvers = {
                 if (!valid) return new AuthenticationError("credentials don't match");
                 anon = false;
             }
+
+            pubsub.publish("USER_STATUS_CHANGED", { userId: user.id, user });
 
             return jwt.sign(
                 {
@@ -312,6 +318,12 @@ const resolvers = {
                 subscribe: withFilter(
                     (_, __, { pubsub }) => pubsub.asyncIterator(["GROUP_JOINED"]),
                     (payload, variables) => payload.groupID === variables.groupID
+                ),
+            },
+            userStatusChanged: {
+                subscribe: withFilter(
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["USER_STATUS_CHANGED"]),
+                    (payload, variables) => payload.userId === variables.userId
                 ),
             },
         },
