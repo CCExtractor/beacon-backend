@@ -129,6 +129,7 @@ const typeDefs = gql`
         userLocation(id: ID!): User
         beaconJoined(id: ID!): User
         groupJoined(groupID: ID!): User
+        userStatusChanged(userId: ID!): User
     }
 
     schema {
