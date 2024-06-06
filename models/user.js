@@ -13,8 +13,6 @@ const UserSchema = new Schema(
         location: LocationSchema,
         beacons: { type: [Schema.Types.ObjectId], ref: "Beacon" },
         groups: { type: [Schema.Types.ObjectId], ref: "Group" },
-        // user status - ONLINE or OFFLINE
-        status: { type: String, default: "ONLINE" },
     },
     {
         timestamps: true,

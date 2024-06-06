@@ -1,4 +1,4 @@
-const { AuthenticationError, UserInputError, withFilter, PubSub } = require("apollo-server-express");
+const { AuthenticationError, UserInputError, withFilter } = require("apollo-server-express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { customAlphabet } = require("nanoid");
@@ -9,7 +9,6 @@ const Group = require("../models/group.js");
 const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
 const { MongoServerError } = require("mongodb");
-
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
 // ~10 days needed, in order to have a 1% probability of at least one collision.
@@ -25,6 +24,7 @@ const resolvers = {
                     path: "leader members",
                 },
             });
+            console.log(result);
             return user;
         },
         beacon: async (_parent, { id }, { user }) => {
@@ -58,9 +58,42 @@ const resolvers = {
 
             // Check if the user is part of the group
             if (group.leader.id !== user.id && !group.members.some(member => member.id === user.id))
-                throw new Error("User should be a part of the group");
+                return UserInputError("User should be a part of the group");
 
             return group;
+        },
+        groups: async (_parent, { page, pageSize }, { user }) => {
+            const findUser = await User.findById(user._id).select("groups");
+
+            if (!findUser) {
+                throw new Error("User not found");
+            }
+
+            const groupIds = findUser.groups;
+
+            const groups = await Group.find({ _id: { $in: groupIds } })
+                .sort({ updatedAt: -1 })
+                .skip((page - 1) * pageSize)
+                .limit(pageSize)
+                .populate("leader beacons");
+
+            return groups ?? [];
+        },
+        beacons: async (_parent, { groupId, page, pageSize }, { user }) => {
+            const group = await Group.findById(groupId).select("beacons");
+
+            if (!group) return Error("This group doesn`t exist any more");
+
+            const hikeIds = group.beacons;
+
+            const hikes = await Beacon.find({ _id: { $in: hikeIds } })
+                .sort({ updatedAt: -1 })
+                .skip((page - 1) * pageSize)
+                .limit(pageSize)
+                .populate("leader followers")
+                .lean();
+
+            return hikes;
         },
         nearbyBeacons: async (_, { location }) => {
             // get active beacons
@@ -139,7 +172,7 @@ const resolvers = {
             let anon = true;
 
             if (credentials) {
-                const valid = email === user.email && bcrypt.compare(password, user.password);
+                const valid = email === user.email && (await bcrypt.compare(password, user.password));
                 if (!valid) return new AuthenticationError("credentials don't match");
                 anon = false;
             }
@@ -226,8 +259,6 @@ const resolvers = {
 
         joinBeacon: async (_, { shortcode }, { user, pubsub }) => {
             const beacon = await Beacon.findOne({ shortcode });
-
-            console.log(`Beacon leader: ${beacon.leader}`);
 
             if (!beacon) return new UserInputError("No beacon exists with that shortcode.");
             if (beacon.expiresAt < Date.now()) return new Error("Beacon has expired");

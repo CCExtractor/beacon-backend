@@ -102,6 +102,8 @@ const typeDefs = gql`
         beacon(id: ID!): Beacon!
         group(id: ID!, page: Int, pageSize: Int): Group!
         nearbyBeacons(location: LocationInput!): [Beacon!]!
+        groups(page: Int, pageSize: Int): [Group!]!
+        beacons(groupId: ID!, page: Int, pageSize: Int): [Beacon!]!
         me: User
         hello: String
     }
@@ -138,7 +140,7 @@ const typeDefs = gql`
         userLocation(id: ID!): User
         beaconJoined(id: ID!): User
         groupJoined(groupID: ID!): User
-        groupUpdate(groupId: ID!): ID!
+        groupUpdate(groupId: ID!): User!
     }
 
     schema {

@@ -3,23 +3,19 @@ import express from "express";
 import expressJWT from "express-jwt";
 import jwt from "jsonwebtoken";
 import { ApolloServer } from "apollo-server-express";
-import { applyMiddleware } from "graphql-middleware";
 import { makeExecutableSchema } from "graphql-tools";
 import mongoose from "mongoose";
-
 import typeDefs from "./graphql/schema.js";
 import resolvers from "./graphql/resolvers.js";
 import { User } from "./models/user.js";
-import { permissions } from "./permissions/index.js";
+
 import pubsub from "./pubsub.js";
-import { init as initDeleteExpiredBeacons } from './cron-jobs/deleteExpiredBeacons.js';
+import { WebSocketServer } from 'ws';
 
-
-initDeleteExpiredBeacons();
 
 const server = new ApolloServer({
-    schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }),permissions),
-    // schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
+    // schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
+    schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
     context: async ({ req, connection }) => {
         // initialize context even if it comes from subscription connection
         if (connection) {
@@ -74,6 +70,37 @@ app.get("/j/:shortcode", async (_req, res) => {
 
 server.applyMiddleware({ app });
 const httpServer = http.createServer(app);
+
+const wss = new WebSocketServer({ server: httpServer });
+
+wss.on('connection', (ws, req) => {
+    console.log('connection created');
+    const url = new URL(req.url, 'http://localhost');
+    const userId = url.searchParams.get('userId');
+    try {
+        updateUserStatus(userId, 'ONLINE');
+    } catch (error) {
+        console.log(error);
+    }
+    ws.on("close", () => {
+        console.log('connection closed');
+        updateUserStatus(userId, 'OFFLINE');
+    });
+});
+
+
+
+
+async function updateUserStatus(userId, status) {
+    try {
+        const user = await User.findByIdAndUpdate(userId, { status }, { new: true });
+        console.log(`User status updated: ${user.status}`);
+    } catch (error) {
+        console.error("Error updating user status:", error);
+    }
+}
+
+
 server.installSubscriptionHandlers(httpServer);
 
 const uri = process.env.DB;
@@ -85,10 +112,11 @@ mongoose
             { port: 4000 },
             console.log(
                 `Server ready at http://localhost:4000${server.graphqlPath}\n` +
-                    `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
+                `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
             )
         )
     )
     .catch(error => {
         throw error;
     });
+
