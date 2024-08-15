@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
 
 const LocationSchema = require("./location.js");
-const { UserSchema } = require("./user.js");
-
 const { Schema, model } = mongoose;
 
 const beaconSchema = new Schema(
@@ -12,11 +10,11 @@ const beaconSchema = new Schema(
         startsAt: { type: Date, default: Date.now },
         expiresAt: { type: Date, required: true },
         leader: { type: Schema.Types.ObjectId, required: true, ref: "User" },
-        showAdminName: { type: Boolean, default: false },
+        // member location
         location: LocationSchema,
-        followers: [UserSchema],
+        followers: { type: [Schema.Types.ObjectId], ref: "User", default: [] },
         route: [LocationSchema],
-        activejoinee: { type: [Schema.Types.ObjectId], ref: "User" },
+        // remove when leave user
         landmarks: { type: [Schema.Types.ObjectId], ref: "Landmark" },
         group: { type: Schema.Types.ObjectId, ref: "Group" },
     },

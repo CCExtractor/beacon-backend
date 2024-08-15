@@ -40,7 +40,6 @@ const typeDefs = gql`
         """
         default is Date.now
         """
-        showAdminName: Boolean
         startsAt: Float
         expiresAt: Float!
         startLocation: LocationInput!
@@ -70,6 +69,7 @@ const typeDefs = gql`
         """
         name: String
         email: String
+        isVerified: Boolean
         location: Location
         beacons: [Beacon!]!
         groups: [Group!]!
@@ -100,10 +100,11 @@ const typeDefs = gql`
 
     type Query {
         beacon(id: ID!): Beacon!
-        group(id: ID!, page: Int, pageSize: Int): Group!
-        nearbyBeacons(location: LocationInput!): [Beacon!]!
+        group(id: ID!): Group!
+        nearbyBeacons(id: ID!, location: LocationInput!, radius: Float!): [Beacon!]!
         groups(page: Int, pageSize: Int): [Group!]!
         beacons(groupId: ID!, page: Int, pageSize: Int): [Beacon!]!
+        filterBeacons(id: ID!, type: String): [Beacon!]!
         me: User
         hello: String
     }
@@ -111,6 +112,26 @@ const typeDefs = gql`
     input oAuthInput {
         email: String
         name: String
+    }
+
+    type UpdatedGroupPayload {
+        groupId: ID!
+        newUser: User
+        newBeacon: Beacon
+        deletedBeacon: Beacon
+        updatedBeacon: Beacon
+    }
+
+    type BeaconLocationsPayload {
+        userSOS: User
+        route: [Location]
+        updatedUser: User
+        landmark: Landmark
+    }
+
+    type JoinLeaveBeaconPayload {
+        newfollower: User
+        inactiveuser: User
     }
 
     type Mutation {
@@ -123,24 +144,26 @@ const typeDefs = gql`
         """
         one of ID or credentials required (ID for anon)
         """
-        login(id: ID, credentials: AuthPayload): String
+        login(id: ID, credentials: AuthPayload): String!
+        sendVerificationCode: String!
+        completeVerification: User!
+        removeMember(groupId: ID!, memberId: ID!): User!
         oAuth(userInput: oAuthInput): String
+        changeShortcode(groupId: ID!): Group!
         joinBeacon(shortcode: String!): Beacon!
-        updateBeaconLocation(id: ID!, location: LocationInput!): Beacon!
-        updateUserLocation(id: ID!, location: LocationInput!): User!
+        updateUserLocation(id: ID!, location: LocationInput!): User
         changeLeader(beaconID: ID!, newLeaderID: ID!): Beacon!
-        changeBeaconDuration(newExpiresAt: Float!, newStartsAt: Float!, beaconID: ID!): Beacon!
+        rescheduleHike(newExpiresAt: Float!, newStartsAt: Float!, beaconID: ID!): Beacon!
         createGroup(group: GroupInput): Group!
         joinGroup(shortcode: String!): Group!
-        deleteBeacon(beaconId: ID!, groupId: ID): Boolean!
+        deleteBeacon(id: ID!): Boolean!
+        sos(id: ID!): User!
     }
 
     type Subscription {
-        beaconLocation(id: ID!): Location
-        userLocation(id: ID!): User
-        beaconJoined(id: ID!): User
-        groupJoined(groupID: ID!): User
-        groupUpdate(groupId: ID!): User!
+        beaconLocations(id: ID!): BeaconLocationsPayload!
+        JoinLeaveBeacon(id: ID!): JoinLeaveBeaconPayload!
+        groupUpdate(groupIds: [ID!]): UpdatedGroupPayload!
     }
 
     schema {
