@@ -182,7 +182,8 @@ const resolvers = {
         },
 
         oAuth: async (_parent, { userInput }) => {
-            console.log("coming here");
+
+            console.log('coming here');
             const { name, email } = userInput;
             let user = await User.findOne({ email });
 
@@ -209,12 +210,13 @@ const resolvers = {
         },
 
         login: async (_parent, { id, credentials }) => {
-            console.log(credentials);
+
+            console.log(credentials)
 
             if (!id && !credentials) return new UserInputError("One of ID and credentials required");
 
             const { email, password } = credentials || {}; // unpack if available
-            console.log(email, password);
+            console.log(email, password)
             const user = id ? await User.findById(id) : await User.findOne({ email });
 
             if (!user) return new Error("User not found.");
@@ -704,6 +706,44 @@ const resolvers = {
                             }
                             return variables.id === beaconID;
                         }
+                    }
+                ),
+            },
+            groupUpdate: {
+                subscribe: withFilter(
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["GROUP_UPDATE"]),
+                    (payload, variables, { user }) => {
+                        const { groupID, groupMembers, groupLeader, groupUpdate } = payload;
+
+                        let { newBeacon, groupId, deletedBeacon, updatedBeacon, newUser } = groupUpdate;
+                        if (newBeacon != null) {
+                            if (newBeacon.leader._id == user.id) {
+                                // stopping to listen to the creator of beacon
+                                return false;
+                            }
+                            payload.groupUpdate.newBeacon = parseBeaconObject(newBeacon);
+                        } else if (deletedBeacon != null) {
+                            if (deletedBeacon.leader.toString() === user._id.toString()) {
+                                // stopping to listen to the creator of beacon
+                                return false;
+                            }
+                            payload.groupUpdate.deletedBeacon = parseBeaconObject(deletedBeacon);
+                        } else if (updatedBeacon != null) {
+                            if (updatedBeacon.leader._id == user.id) {
+                                // stopping to listen to the creator of beacon
+                                return false;
+                            }
+                            payload.groupUpdate.updatedBeacon = parseBeaconObject(updatedBeacon);
+                        }
+                        if (!variables.groupIds.includes(groupID)) {
+                            return false;
+                        }
+                        // checking if user is part of group or not
+                        const isGroupLeader = groupLeader === user.id.toString();
+                        const isGroupMember = groupMembers.includes(user.id);
+
+                        let istrue = isGroupLeader || isGroupMember;
+                        return istrue && variables.groupIds.includes(groupId);
                     }
                 ),
             },
