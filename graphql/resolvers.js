@@ -614,22 +614,20 @@ const resolvers = {
         },
 
         sos: async (_, { id }, { user, pubsub }) => {
-
-            console.log('calling sos')
+            console.log("calling sos");
 
             try {
-
                 const beacon = await Beacon.findById(id);
 
                 if (!beacon) return new UserInputError("No beacon exist with this id!");
-    
+
                 if (beacon.leader != user.id && !beacon.followers.includes(user.id))
                     return new UserInputError("You are not the part of beacon!");
-    
+
                 const currentDate = new Date();
-    
+
                 if (new Date(beacon.expiresAt) < currentDate) return new UserInputError("Beacon is already expired!");
-    
+
                 pubsub.publish("BEACON_LOCATIONS", {
                     beaconLocations: {
                         userSOS: user,
@@ -641,13 +639,11 @@ const resolvers = {
                     followers: beacon.followers,
                     leaderID: beacon.leader,
                 });
-    
+
                 return user;
-                
             } catch (error) {
-                console.log(error)
+                console.log(error);
             }
-           
         },
 
         changeLeader: async (_, { beaconID, newLeaderID }, { user }) => {
