@@ -16,3 +16,8 @@
 //     publisher: new Redis(options),
 //     subscriber: new Redis(options),
 // });
+
+
+const { PubSub } = require("graphql-subscriptions");
+
+module.exports = new PubSub();

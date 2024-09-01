@@ -10,7 +10,6 @@ const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
 const { MongoServerError } = require("mongodb");
 const { parseBeaconObject, parseUserObject, parseLandmarkObject } = require("../parsing.js");
-const landmark = require("../models/landmark.js");
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
 // ~10 days needed, in order to have a 1% probability of at least one collision.
@@ -615,30 +614,40 @@ const resolvers = {
         },
 
         sos: async (_, { id }, { user, pubsub }) => {
-            const beacon = await Beacon.findById(id);
 
-            if (!beacon) return new UserInputError("No beacon exist with this id!");
+            console.log('calling sos')
 
-            if (beacon.leader != user.id && !beacon.followers.includes(user.id))
-                return new UserInputError("You are not the part of beacon!");
+            try {
 
-            const currentDate = new Date();
+                const beacon = await Beacon.findById(id);
 
-            if (new Date(beacon.expiresAt) < currentDate) return new UserInputError("Beacon is already expired!");
-
-            pubsub.publish("BEACON_LOCATIONS", {
-                beaconLocations: {
-                    userSOS: user,
-                    route: null,
-                    updatedUser: null,
-                    landmark: null,
-                },
-                beaconID: id,
-                followers: beacon.followers,
-                leaderID: beacon.leader,
-            });
-
-            return user;
+                if (!beacon) return new UserInputError("No beacon exist with this id!");
+    
+                if (beacon.leader != user.id && !beacon.followers.includes(user.id))
+                    return new UserInputError("You are not the part of beacon!");
+    
+                const currentDate = new Date();
+    
+                if (new Date(beacon.expiresAt) < currentDate) return new UserInputError("Beacon is already expired!");
+    
+                pubsub.publish("BEACON_LOCATIONS", {
+                    beaconLocations: {
+                        userSOS: user,
+                        route: null,
+                        updatedUser: null,
+                        landmark: null,
+                    },
+                    beaconID: id,
+                    followers: beacon.followers,
+                    leaderID: beacon.leader,
+                });
+    
+                return user;
+                
+            } catch (error) {
+                console.log(error)
+            }
+           
         },
 
         changeLeader: async (_, { beaconID, newLeaderID }, { user }) => {
