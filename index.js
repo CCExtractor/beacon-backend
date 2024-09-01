@@ -59,7 +59,7 @@ app.use(
     })
 );
 
-app.get("/", (req, res) => res.send("Hello World! This is a GraphQL API. Check out /graphql"));
+app.get("/", (req, res) => res.send("Hello World! This is Beacon!"));
 
 app.get("/j/:shortcode", async (_req, res) => {
     console.log(`shortcode route hit`);
