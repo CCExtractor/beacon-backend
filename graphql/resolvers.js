@@ -182,8 +182,7 @@ const resolvers = {
         },
 
         oAuth: async (_parent, { userInput }) => {
-
-            console.log('coming here');
+            console.log("coming here");
             const { name, email } = userInput;
             let user = await User.findOne({ email });
 
@@ -210,13 +209,12 @@ const resolvers = {
         },
 
         login: async (_parent, { id, credentials }) => {
-
-            console.log(credentials)
+            console.log(credentials);
 
             if (!id && !credentials) return new UserInputError("One of ID and credentials required");
 
             const { email, password } = credentials || {}; // unpack if available
-            console.log(email, password)
+            console.log(email, password);
             const user = id ? await User.findById(id) : await User.findOne({ email });
 
             if (!user) return new Error("User not found.");
