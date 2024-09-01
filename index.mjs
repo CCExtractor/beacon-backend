@@ -71,14 +71,17 @@ const httpServer = http.createServer(app);
 
 server.installSubscriptionHandlers(httpServer);
 
+
+const port = 4000 || process.env.PORT;
+
 mongoose
     .connect(process.env.DB)
     .then(() =>
         httpServer.listen(
-            { port: 4000 },
+            { port: port},
             console.log(
-                `Server ready at http://localhost:4000${server.graphqlPath}\n` +
-                    `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
+                `Server ready at http://localhost:${port}${server.graphqlPath}\n` +
+                    `Subscriptions endpoint at ws://localhost:${port}${server.subscriptionsPath}`
             )
         )
     )
