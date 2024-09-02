@@ -9,21 +9,27 @@ const Group = require("../models/group.js");
 const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
 const { MongoServerError } = require("mongodb");
-
+const { parseBeaconObject, parseUserObject, parseLandmarkObject } = require("../parsing.js");
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
 // ~10 days needed, in order to have a 1% probability of at least one collision.
 const nanoid = customAlphabet(alphabet, 6);
+const nodemailer = require("nodemailer");
 
 const resolvers = {
     Query: {
         hello: () => "Hello world!",
         me: async (_parent, _args, { user }) => {
-            await user.populate("groups beacons.leader beacons.landmarks");
-            return user;
+            const _user = await User.findById(user.id);
+            return _user;
         },
         beacon: async (_parent, { id }, { user }) => {
-            const beacon = await Beacon.findById(id).populate("landmarks leader");
+            const beacon = await Beacon.findById(id)
+                .populate("leader followers")
+                .populate({
+                    path: "landmarks",
+                    populate: { path: "createdBy", select: "name email" },
+                });
             if (!beacon) return new UserInputError("No beacon exists with that id.");
             // return error iff user not in beacon
             let flag = false;
@@ -33,26 +39,123 @@ const resolvers = {
                     break;
                 }
             if (beacon.leader.id !== user.id && !flag) return new Error("User should be a part of beacon");
+
             return beacon;
         },
         group: async (_parent, { id }, { user }) => {
-            const group = await Group.findById(id).populate("leader members beacons");
+            const group = await Group.findById(id).populate("leader members");
+
+            if (!group.leader._id.equals(user._id) && !group.members.some(member => member._id.equals(user._id)))
+                return UserInputError("User should be part of group!");
             if (!group) return new UserInputError("No group exists with that id.");
-            // return error iff user not in group
-            if (group.leader.id !== user.id && !group.members.includes(user))
-                return new Error("User should be a part of the group");
+
+            // Check if the user is part of the group
+            if (group.leader.id !== user.id && !group.members.some(member => member.id === user.id))
+                return UserInputError("User should be a part of the group");
+
             return group;
         },
-        nearbyBeacons: async (_, { location }) => {
+        groups: async (_parent, { page, pageSize }, { user }) => {
+            if (!user.groups) return Error(`User have no groups!`);
+
+            let groups = await Group.find({ _id: { $in: user.groups } })
+                .sort({ updatedAt: -1 })
+                .skip((page - 1) * pageSize)
+                .limit(pageSize)
+                .populate("leader members")
+                .lean();
+
+            // it might be possible that group has been deleted
+            groups = groups.filter(group => group !== null);
+
+            return groups ?? [];
+        },
+        beacons: async (_parent, { groupId, page, pageSize }, { user }) => {
+            const group = await Group.findById(groupId).select("beacons");
+
+            if (!group) return new Error("This group doesn`t exist any more");
+
+            if (!group.leader === user.id && !group.members.include(user.id))
+                return Error("User should be part of group!");
+
+            const hikeIds = group.beacons;
+
+            const allHikes = await Beacon.find({ _id: { $in: hikeIds } })
+                .populate("leader followers")
+                .lean();
+
+            const currentTime = new Date();
+
+            const activeHikes = [];
+            const upcomingHikes = [];
+            const inactiveHikes = [];
+
+            allHikes.forEach(hike => {
+                if (hike.startsAt <= currentTime && hike.expiresAt >= currentTime) {
+                    activeHikes.push(hike);
+                } else if (hike.startsAt > currentTime) {
+                    upcomingHikes.push(hike);
+                } else {
+                    inactiveHikes.push(hike);
+                }
+            });
+
+            const sortedHikes = [...activeHikes, ...upcomingHikes, ...inactiveHikes];
+
+            const paginatedHikes = sortedHikes.slice((page - 1) * pageSize, page * pageSize);
+
+            return paginatedHikes;
+        },
+        filterBeacons: async (_, { id, type }, { user }) => {
+            const group = await Group.findById(id);
+
+            if (!group.leader === user.id && !group.members.include(user.id))
+                return Error("User should be part of group!");
+
+            const beaconIds = group.beacons;
+
+            let beacons = await Beacon.find({ _id: { $in: beaconIds } }).populate("leader");
+
+            if (type == "ACTIVE") {
+                beacons = beacons.filter(beacon => {
+                    return new Date(beacon.startsAt) <= new Date() && new Date() < new Date(beacon.expiresAt);
+                });
+            } else if (type == "INACTIVE") {
+                beacons = beacons.filter(beacon => {
+                    return new Date() > new Date(beacon.expiresAt);
+                });
+            } else if (type == "UPCOMING") {
+                beacons = beacons.filter(beacon => {
+                    return new Date() < new Date(beacon.startsAt);
+                });
+            }
+
+            return beacons;
+        },
+        nearbyBeacons: async (_, { location, id, radius }, { user }) => {
+            const group = await Group.findById(id);
+
+            if (!group.leader === user.id && !group.members.include(user.id))
+                return Error("User should be part of group!");
+
+            const beaconIds = group.beacons;
+
             // get active beacons
-            const beacons = await Beacon.find({ expiresAt: { $gte: new Date() } }).populate("leader");
+            let beacons = await Beacon.find({ _id: { $in: beaconIds } }).populate("leader");
+
+            const now = new Date();
+            beacons = beacons.filter(beacon => {
+                const expiresAt = new Date(beacon.expiresAt);
+                return expiresAt > now;
+            });
+
             let nearby = [];
             beacons.forEach(b => {
                 // unpack to not pass extra db fields to function
                 const { lat, lon } = b.location;
-                if (isPointWithinRadius({ lat, lon }, location, 1500)) nearby.push(b); // add beacons within 1.5km
+                if (isPointWithinRadius({ lat, lon }, location, radius)) nearby.push(b); // add beacons within 1.5km
             });
-            console.log("nearby beacons:", nearby);
+
             return nearby;
         },
     },
@@ -61,9 +164,8 @@ const resolvers = {
         register: async (_parent, { user }) => {
             const { name, credentials } = user;
 
-            // check if user already exists
-            if (credentials && (await User.findOne({ email: credentials.email })) !== null)
-                return new UserInputError("User with email already registered.");
+            var currentUser = await User.findOne({ email: credentials.email });
+            if (credentials && currentUser) return new UserInputError("User with email already registered.");
 
             const newUser = new User({
                 name,
@@ -73,14 +175,45 @@ const resolvers = {
                     password: await bcrypt.hash(credentials.password, 10),
                 }),
             });
+
             const userObj = await newUser.save();
             return userObj;
         },
 
+        oAuth: async (_parent, { userInput }) => {
+            console.log("coming here");
+            const { name, email } = userInput;
+            let user = await User.findOne({ email });
+
+            if (!user) {
+                const newUser = new User({ name, email, isVerified: true });
+                user = await newUser.save();
+            }
+
+            const anon = false;
+            const tokenPayload = {
+                "https://beacon.ccextractor.org": {
+                    anon,
+                    ...(email && { email }),
+                },
+            };
+
+            const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+                algorithm: "HS256",
+                subject: user._id.toString(),
+                expiresIn: "7d",
+            });
+
+            return token;
+        },
+
         login: async (_parent, { id, credentials }) => {
+            console.log(credentials);
+
             if (!id && !credentials) return new UserInputError("One of ID and credentials required");
 
             const { email, password } = credentials || {}; // unpack if available
+            console.log(email, password);
             const user = id ? await User.findById(id) : await User.findOne({ email });
 
             if (!user) return new Error("User not found.");
@@ -114,7 +247,57 @@ const resolvers = {
             );
         },
 
-        createBeacon: async (_, { beacon, groupID }, { user }) => {
+        sendVerificationCode: async (_, {}, { user }) => {
+            const min = 1000;
+            const max = 9999;
+
+            let verificationCode = Math.floor(Math.random() * (max - min + 1)) + min;
+
+            const transporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                    user: process.env.EMAIL_USERNAME,
+                    pass: process.env.EMAIL_PASSWORD,
+                },
+            });
+
+            let mailOptions = {
+                from: "Beacon",
+                to: user.email,
+                subject: `Verification code`,
+                text: `Your verification code is: 
+                                       ${verificationCode}`,
+            };
+            transporter.sendMail(mailOptions);
+
+            return verificationCode;
+        },
+        completeVerification: async (_, {}, { user }) => {
+            let currentUser = await User.findById(user.id);
+            currentUser.isVerified = true;
+            await currentUser.save();
+            return currentUser;
+        },
+
+        removeMember: async (_, { groupId, memberId }, { user, pubsub }) => {
+            const group = await Group.findById(groupId);
+            if (!group) return new UserInputError("No group exists with this code!");
+
+            if (group.leader.toString() !== user._id.toString())
+                return new UserInputError("You are not the leader of this group!");
+
+            if (!group.members.includes(memberId)) return new UserInputError("User is no longer member of group!");
+
+            group.members.pull(memberId);
+            await group.save();
+
+            let kickedUser = await User.findById(memberId);
+            kickedUser.groups.pull(groupId);
+            await kickedUser.save();
+
+            return kickedUser;
+        },
+        createBeacon: async (_, { beacon, groupID }, { user, pubsub }) => {
             //the group to which this beacon will belong to.
             const group = await Group.findById(groupID);
             if (!group) return new UserInputError("No group exists with that id.");
@@ -128,16 +311,30 @@ const resolvers = {
                 group: group.id,
                 ...beacon,
             });
-            const newBeacon = await beaconDoc.save().then(b => b.populate("leader"));
+
+            const newBeacon = await beaconDoc.save().then(b => b.populate("leader followers"));
             user.beacons.push(newBeacon.id);
             group.beacons.push(newBeacon.id);
             await user.save();
             await group.save();
+
+            pubsub.publish("GROUP_UPDATE", {
+                groupUpdate: {
+                    newUser: null,
+                    newBeacon: newBeacon,
+                    deletedBeacon: null,
+                    updatedBeacon: null,
+                    groupId: groupID,
+                },
+                groupID: groupID,
+                groupMembers: group.members,
+                groupLeader: group.leader,
+            });
+
             return newBeacon;
         },
 
         createGroup: async (_, { group }, { user }) => {
-            console.log(group);
             //since there is a very minute chance of shortcode colliding, we try to make the group 2 times if 1st one results in a collision.
             for (let i = 0; i < 2; i++) {
                 try {
@@ -149,12 +346,10 @@ const resolvers = {
                     const newGroup = await groupDoc.save().then(g => g.populate("leader"));
                     user.groups.push(newGroup.id);
                     await user.save();
-                    console.log(newGroup);
                     return newGroup;
                 } catch (e) {
                     //try again only if shortcode collides.
                     if (e instanceof MongoServerError && e.keyValue["shortcode"]) {
-                        console.error(e);
                     } else {
                         //else return the error;
                         return new Error(e);
@@ -165,15 +360,64 @@ const resolvers = {
             return new Error("Please try again!");
         },
 
-        changeBeaconDuration: async (_, { newExpiresAt, beaconID }, { user }) => {
-            const beacon = await Beacon.findById(beaconID);
+        changeShortcode: async (_, { groupId }, { user }) => {
+            let group = await Group.findById(groupId).populate("leader members");
+
+            if (!group.leader._id.equals(user._id)) {
+                throw new UserInputError("You are not the leader of the group!");
+            }
+
+            // trying two times in case gets shortcode collides
+            for (let i = 0; i < 2; i++) {
+                try {
+                    const newShortcode = nanoid();
+                    group.shortcode = newShortcode;
+                    const updatedGroup = await Group.findByIdAndUpdate(
+                        groupId,
+                        { shortcode: newShortcode },
+                        { new: true, timestamps: false }
+                    ).populate("leader members");
+
+                    return updatedGroup;
+                } catch (e) {
+                    // If there's a collision, retry
+                    if (e instanceof MongoServerError && e.keyValue["shortcode"]) {
+                        console.error(e);
+                    } else {
+                        // Else returning error
+                        throw new Error(e);
+                    }
+                }
+            }
+
+            // If shortcode collides two times then returning to say try again
+            return new Error("Please try again!");
+        },
+
+        rescheduleHike: async (_, { newStartsAt, newExpiresAt, beaconID }, { user, pubsub }) => {
+            // populating group members to send members and leader ids in subscription filter
+            const beacon = await Beacon.findById(beaconID).populate("group leader followers");
 
             if (!beacon) return new UserInputError("No beacon exists with that id.");
-            if (beacon.leader != user.id) return new Error("Only the leader is allowed to change the beacon duration.");
-            if (beacon.startsAt.getTime() > newExpiresAt) return Error("Beacon can not expire before it has started.");
-
+            if (!beacon.leader.toString() === user.id.toString())
+                return new Error("Only the leader is allowed to change the beacon duration.");
+            // if (beacon.startsAt.getTime() > newExpiresAt) return Error("Beacon can not expire before it has started.");
+            beacon.startsAt = newStartsAt;
             beacon.expiresAt = newExpiresAt;
             await beacon.save();
+
+            pubsub.publish("GROUP_UPDATE", {
+                groupUpdate: {
+                    newUser: null,
+                    newBeacon: null,
+                    deletedBeacon: null,
+                    updatedBeacon: beacon,
+                    groupId: beacon.group.id,
+                },
+                groupID: beacon.group.id,
+                groupMembers: beacon.group.members,
+                groupLeader: beacon.group.leader.toString(),
+            });
 
             return beacon;
         },
@@ -195,21 +439,73 @@ const resolvers = {
                 group.members.push(user.id);
                 user.groups.push(group.id);
                 //publish over groupJoined Sub.
-                pubsub.publish("GROUP_JOINED", { groupJoined: user, groupID: group.id });
+                pubsub.publish("GROUP_UPDATE", {
+                    groupUpdate: {
+                        newUser: user,
+                        newBeacon: null,
+                        deletedBeacon: null,
+                        updatedBeacon: null,
+                        groupId: group.id,
+                    },
+                    groupID: group.id,
+                    groupMembers: group.members,
+                    groupLeader: group.leader.id,
+                });
 
                 await group.save();
             }
 
             beacon.followers.push(user);
-            console.log("user joined beacon: ", user);
             await beacon.save().then(b => b.populate("leader"));
 
-            pubsub.publish("BEACON_JOINED", { beaconJoined: user, beaconID: beacon.id });
+            pubsub.publish("JOIN_LEAVE", {
+                JoinLeaveBeacon: {
+                    newfollower: user,
+                    inactiveuser: null,
+                },
+                beaconID: beacon.id,
+            });
 
             user.beacons.push(beacon.id);
             await user.save();
 
             return beacon;
+        },
+
+        deleteBeacon: async (_parent, { id }, { user, pubsub }) => {
+            const beacon = await Beacon.findById(id);
+            if (!beacon) {
+                return new UserInputError("No beacon exists with this id!");
+            }
+
+            if (beacon.leader.toString() !== user.id)
+                return new Error("Beacon leader is allowed to delete the beacon!");
+
+            await User.updateOne({ _id: user.id }, { $pull: { beacons: id } });
+
+            const group = await Group.findById(beacon.group);
+            group.beacons.pull(id);
+            await group.save();
+
+            const landmarkIds = beacon.landmarks;
+            await Promise.all(landmarkIds.map(landmarkId => Landmark.findByIdAndDelete(landmarkId)));
+
+            const deletedBeacon = await Beacon.findByIdAndDelete(id);
+
+            pubsub.publish("GROUP_UPDATE", {
+                groupUpdate: {
+                    newUser: null,
+                    newBeacon: null,
+                    deletedBeacon: deletedBeacon,
+                    updatedBeacon: null,
+                    groupId: group.id,
+                },
+                groupID: group.id,
+                groupMembers: group.members,
+                groupLeader: group.leader.toString(),
+            });
+
+            return deletedBeacon !== null;
         },
 
         joinGroup: async (_, { shortcode }, { user, pubsub }) => {
@@ -220,98 +516,238 @@ const resolvers = {
             if (group.leader == user.id) return new Error("You are the leader of the group!");
 
             group.members.push(user.id);
-            console.log("user joined group: ", user);
             await group.save();
-            await group.populate("leader");
-
-            //publish this change over GROUP_JOINED subscription.
-            pubsub.publish("GROUP_JOINED", { groupJoined: user, groupID: group.id });
+            await group.populate("leader members beacons");
 
             user.groups.push(group.id);
             await user.save();
+
+            const groupId = group._id;
+
+            // publish this change over GROUP_UPDATE subscription.
+            pubsub.publish("GROUP_UPDATE", {
+                groupUpdate: {
+                    newUser: user,
+                    newBeacon: null,
+                    deletedBeacon: null,
+                    updatedBeacon: null,
+                    groupId: groupId,
+                },
+                groupID: groupId,
+                groupMembers: group.members,
+                groupLeader: group.leader.id,
+            });
+
             return group;
         },
 
-        createLandmark: async (_, { landmark, beaconID }, { user }) => {
+        createLandmark: async (_, { landmark, beaconID }, { user, pubsub }) => {
             const beacon = await Beacon.findById(beaconID);
             // to save on a db call to populate leader, we just use the stored id to compare
-            if (!beacon || (!beacon.followers.includes(user.id) && beacon.leader.toString() !== user.id))
-                return new UserInputError("User should be part of beacon.");
+
+            if (!beacon) return new UserInputError("Beacon doesn't exist");
+
+            if (!beacon.followers.includes(user.id) && beacon.leader != user.id)
+                return new UserInputError("User should be part of beacon");
             const newLandmark = new Landmark({ createdBy: user.id, ...landmark });
-            await newLandmark.save();
+            const populatedLandmark = await newLandmark.save().then(lan => lan.populate("createdBy"));
 
             beacon.landmarks.push(newLandmark.id);
+
+            pubsub.publish("BEACON_LOCATIONS", {
+                beaconLocations: {
+                    userSOS: null,
+                    route: null,
+                    updatedUser: null,
+                    landmark: populatedLandmark,
+                },
+                beaconID: beacon.id,
+                followers: beacon.followers,
+                leaderID: beacon.leader,
+            });
             await beacon.save();
 
-            return newLandmark;
-        },
-
-        updateBeaconLocation: async (_, { id, location }, { user, pubsub }) => {
-            const beacon = await Beacon.findById(id).populate("leader");
-            if (!beacon) return new UserInputError("No beacon exists with that id.");
-
-            if (beacon.leader.id !== user.id) return new Error("Only the beacon leader can update beacon location");
-
-            // beacon id used for filtering but only location sent to user bc schema
-            pubsub.publish("BEACON_LOCATION", { beaconLocation: location, beaconID: beacon.id });
-
-            beacon.location = location;
-            await beacon.save();
-
-            return beacon;
+            return populatedLandmark;
         },
 
         updateUserLocation: async (_, { id, location }, { user, pubsub }) => {
             const beacon = await Beacon.findById(id);
             if (!beacon) return new UserInputError("No beacon exists with that id.");
 
-            user.location = location;
-            await user.save();
+            let updatedUser;
 
-            // beacon id used for filtering but only location sent to user bc schema
-            pubsub.publish("USER_LOCATION", { userLocation: user, beaconID: beacon.id }); // TODO: harden it so non-essential user data is not exposed
+            if (user.id == beacon.leader) {
+                // new route created by leader
+                user.location = location;
+                beacon.route.push(location);
+                updatedUser = await user.save();
+                await beacon.save();
+                pubsub.publish("BEACON_LOCATIONS", {
+                    beaconLocations: {
+                        userSOS: null,
+                        route: beacon.route,
+                        updatedUser: null,
+                        landmark: null,
+                    },
+                    beaconID: id,
+                    followers: beacon.followers,
+                    leaderID: beacon.leader,
+                });
+            } else {
+                // new location of follower
+                user.location = location;
+                updatedUser = await user.save();
+                pubsub.publish("BEACON_LOCATIONS", {
+                    beaconLocations: {
+                        userSOS: null,
+                        route: null,
+                        updatedUser: updatedUser,
+                        landmark: null,
+                    },
+                    beaconID: id,
+                    followers: beacon.followers,
+                    leaderID: beacon.leader,
+                });
+            }
 
-            return user;
+            return updatedUser;
+        },
+
+        sos: async (_, { id }, { user, pubsub }) => {
+            console.log("calling sos");
+
+            try {
+                const beacon = await Beacon.findById(id);
+
+                if (!beacon) return new UserInputError("No beacon exist with this id!");
+
+                if (beacon.leader != user.id && !beacon.followers.includes(user.id))
+                    return new UserInputError("You are not the part of beacon!");
+
+                const currentDate = new Date();
+
+                if (new Date(beacon.expiresAt) < currentDate) return new UserInputError("Beacon is already expired!");
+
+                pubsub.publish("BEACON_LOCATIONS", {
+                    beaconLocations: {
+                        userSOS: user,
+                        route: null,
+                        updatedUser: null,
+                        landmark: null,
+                    },
+                    beaconID: id,
+                    followers: beacon.followers,
+                    leaderID: beacon.leader,
+                });
+
+                return user;
+            } catch (error) {
+                console.log(error);
+            }
         },
 
         changeLeader: async (_, { beaconID, newLeaderID }, { user }) => {
             const beacon = await Beacon.findById(beaconID);
-            if (!beacon) return new UserInputError("No beacon exists with that id.");
-
-            if (beacon.leader != user.id) return new Error("Only the beacon leader can update leader");
-
-            beacon.leader = newLeaderID;
-            await beacon.save();
-
-            return beacon;
         },
     },
     ...(process.env._HANDLER == null && {
         Subscription: {
-            beaconLocation: {
+            // for updating all the location changes in Beacon like leader members location,
+            // landmarks creation,
+            beaconLocations: {
                 subscribe: withFilter(
-                    (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATION"]),
-                    (payload, variables) => payload.beaconID === variables.id
-                ),
-            },
-            userLocation: {
-                subscribe: withFilter(
-                    (_, __, { pubsub }) => pubsub.asyncIterator(["USER_LOCATION"]),
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_LOCATIONS"]),
                     (payload, variables, { user }) => {
-                        return payload.beaconID === variables.id && payload.userLocation.id !== user.id; // account for self updates
+                        const { beaconLocations, leaderID, followers, beaconID } = payload;
+                        const { userSOS, route, updatedUser, landmark } = beaconLocations;
+
+                        const isFollower = followers.includes(user.id);
+                        const isLeader = leaderID == user.id;
+                        const istrue = variables.id === beaconID && (isFollower || isLeader);
+
+                        if (userSOS != null && user.id != userSOS._id) {
+                            payload.beaconLocations.userSOS = parseUserObject(userSOS);
+                            return istrue;
+                        }
+                        if (route != null && leaderID != user.id) {
+                            return istrue;
+                        }
+
+                        // stopping user who has updated the location
+                        if (updatedUser != null && updatedUser._id != user.id) {
+                            payload.beaconLocations.updatedUser = parseUserObject(updatedUser);
+                            return istrue;
+                        }
+                        // stopping the creator of landmark
+                        if (landmark != null && landmark.createdBy._id != user.id) {
+                            payload.beaconLocations.landmark = parseLandmarkObject(landmark);
+                            return istrue;
+                        }
+                        return false;
                     }
                 ),
             },
-            beaconJoined: {
+
+            JoinLeaveBeacon: {
                 subscribe: withFilter(
-                    (_, __, { pubsub }) => pubsub.asyncIterator(["BEACON_JOINED"]),
-                    (payload, variables) => payload.beaconID === variables.id
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["JOIN_LEAVE"]),
+                    (payload, variables, { user }) => {
+                        let { beaconID, JoinLeaveBeacon } = payload;
+                        let { newfollower, inactiveuser } = JoinLeaveBeacon;
+
+                        if (newfollower != null) {
+                            if (newfollower.id == user.id) {
+                                return false;
+                            }
+                            return variables.id === beaconID;
+                        }
+
+                        if (inactiveuser != null) {
+                            if (newfollower.id == user.id) {
+                                payload.JoinLeaveBeacon.inactiveuser = parseUserObject(inactiveuser);
+                                return false;
+                            }
+                            return variables.id === beaconID;
+                        }
+                    }
                 ),
             },
-            groupJoined: {
+            groupUpdate: {
                 subscribe: withFilter(
-                    (_, __, { pubsub }) => pubsub.asyncIterator(["GROUP_JOINED"]),
-                    (payload, variables) => payload.groupID === variables.groupID
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["GROUP_UPDATE"]),
+                    (payload, variables, { user }) => {
+                        const { groupID, groupMembers, groupLeader, groupUpdate } = payload;
+
+                        let { newBeacon, groupId, deletedBeacon, updatedBeacon, newUser } = groupUpdate;
+                        if (newBeacon != null) {
+                            if (newBeacon.leader._id == user.id) {
+                                // stopping to listen to the creator of beacon
+                                return false;
+                            }
+                            payload.groupUpdate.newBeacon = parseBeaconObject(newBeacon);
+                        } else if (deletedBeacon != null) {
+                            if (deletedBeacon.leader.toString() === user._id.toString()) {
+                                // stopping to listen to the creator of beacon
+                                return false;
+                            }
+                            payload.groupUpdate.deletedBeacon = parseBeaconObject(deletedBeacon);
+                        } else if (updatedBeacon != null) {
+                            if (updatedBeacon.leader._id == user.id) {
+                                // stopping to listen to the creator of beacon
+                                return false;
+                            }
+                            payload.groupUpdate.updatedBeacon = parseBeaconObject(updatedBeacon);
+                        }
+                        if (!variables.groupIds.includes(groupID)) {
+                            return false;
+                        }
+                        // checking if user is part of group or not
+                        const isGroupLeader = groupLeader === user.id.toString();
+                        const isGroupMember = groupMembers.includes(user.id);
+
+                        let istrue = isGroupLeader || isGroupMember;
+                        return istrue && variables.groupIds.includes(groupId);
+                    }
                 ),
             },
         },

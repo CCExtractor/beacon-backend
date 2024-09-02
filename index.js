@@ -1,23 +1,20 @@
-import http from "http";
-import express from "express";
-import expressJWT from "express-jwt";
-import jwt from "jsonwebtoken";
-import { ApolloServer } from "apollo-server-express";
-import { applyMiddleware } from "graphql-middleware";
-import { makeExecutableSchema } from "graphql-tools";
-import mongoose from "mongoose";
-
-import typeDefs from "./graphql/schema.js";
-import resolvers from "./graphql/resolvers.js";
-import { User } from "./models/user.js";
-import { permissions } from "./permissions/index.js";
-import pubsub from "./pubsub.js";
+const http = require("http");
+const express = require("express");
+const expressJWT = require("express-jwt");
+const jwt = require("jsonwebtoken");
+const { ApolloServer } = require("apollo-server-express");
+const { applyMiddleware } = require("graphql-middleware");
+const { makeExecutableSchema } = require("graphql-tools");
+const mongoose = require("mongoose");
+const typeDefs = require("./graphql/schema.js");
+const resolvers = require("./graphql/resolvers.js");
+const { User } = require("./models/user.js");
+const { permissions } = require("./permissions/index.js");
+const pubsub = require("./pubsub.js");
 
 const server = new ApolloServer({
     schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
-    // schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
     context: async ({ req, connection }) => {
-        // initialize context even if it comes from subscription connection
         if (connection) {
             return { user: connection.context.user, pubsub };
         }
@@ -32,7 +29,7 @@ const server = new ApolloServer({
         onConnect: async connectionParams => {
             console.log("Client connected");
             const authorization = connectionParams["Authorization"];
-            // add user to connection context
+
             if (authorization) {
                 try {
                     const decoded = jwt.verify(authorization.replace("Bearer ", ""), process.env.JWT_SECRET);
@@ -40,6 +37,7 @@ const server = new ApolloServer({
                     const user = await User.findById(decoded.sub).populate("beacons");
                     return { user };
                 } catch (err) {
+                    console.log(err);
                     throw new Error("Invalid token!");
                 }
             }
@@ -61,7 +59,7 @@ app.use(
     })
 );
 
-app.get("/", (req, res) => res.send("Hello World! This is a GraphQL API. Check out /graphql"));
+app.get("/", (req, res) => res.send("Hello World! This is Beacon!"));
 
 app.get("/j/:shortcode", async (_req, res) => {
     console.log(`shortcode route hit`);
@@ -70,18 +68,19 @@ app.get("/j/:shortcode", async (_req, res) => {
 
 server.applyMiddleware({ app });
 const httpServer = http.createServer(app);
+
 server.installSubscriptionHandlers(httpServer);
 
-const uri = process.env.DB;
-const options = { useNewUrlParser: true, useUnifiedTopology: true };
+const port = 4000 || process.env.PORT;
+
 mongoose
-    .connect(uri, options)
+    .connect(process.env.DB)
     .then(() =>
         httpServer.listen(
-            { port: 4000 },
+            { port: port },
             console.log(
-                `Server ready at http://localhost:4000${server.graphqlPath}\n` +
-                    `Subscriptions endpoint at ws://localhost:4000${server.subscriptionsPath}`
+                `Server ready at http://localhost:${port}${server.graphqlPath}\n` +
+                    `Subscriptions endpoint at ws://localhost:${port}${server.subscriptionsPath}`
             )
         )
     )
