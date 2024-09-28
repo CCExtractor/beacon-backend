@@ -707,6 +707,44 @@ const resolvers = {
                     }
                 ),
             },
+            groupUpdate: {
+                subscribe: withFilter(
+                    (_, __, { pubsub }) => pubsub.asyncIterator(["GROUP_UPDATE"]),
+                    (payload, variables, { user }) => {
+                        const { groupID, groupMembers, groupLeader, groupUpdate } = payload;
+
+                        let { newBeacon, groupId, deletedBeacon, updatedBeacon, newUser } = groupUpdate;
+                        if (newBeacon != null) {
+                            if (newBeacon.leader._id == user.id) {
+                                // stopping to listen to the creator of beacon
+                                return false;
+                            }
+                            payload.groupUpdate.newBeacon = parseBeaconObject(newBeacon);
+                        } else if (deletedBeacon != null) {
+                            if (deletedBeacon.leader.toString() === user._id.toString()) {
+                                // stopping to listen to the creator of beacon
+                                return false;
+                            }
+                            payload.groupUpdate.deletedBeacon = parseBeaconObject(deletedBeacon);
+                        } else if (updatedBeacon != null) {
+                            if (updatedBeacon.leader._id == user.id) {
+                                // stopping to listen to the creator of beacon
+                                return false;
+                            }
+                            payload.groupUpdate.updatedBeacon = parseBeaconObject(updatedBeacon);
+                        }
+                        if (!variables.groupIds.includes(groupID)) {
+                            return false;
+                        }
+                        // checking if user is part of group or not
+                        const isGroupLeader = groupLeader === user.id.toString();
+                        const isGroupMember = groupMembers.includes(user.id);
+
+                        let istrue = isGroupLeader || isGroupMember;
+                        return istrue && variables.groupIds.includes(groupId);
+                    }
+                ),
+            },
         },
     }),
 };
