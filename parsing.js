@@ -50,7 +50,9 @@ function parseUserObject(userObject) {
             updatedAt: convertToDate(userObject.updatedAt),
             __v: userObject.__v,
         };
-    } catch (error) {}
+    } catch (error) {
+        console.log(error)
+    }
 
     return model;
 }
