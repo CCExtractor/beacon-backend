@@ -348,8 +348,7 @@ const resolvers = {
                     await user.save();
                     return newGroup;
                 } catch (e) {
-                    
-                        return new Error(e);
+                    return new Error(e);
                 }
             }
             //if shortcode collides two times then return an error saying please try again.
@@ -635,7 +634,6 @@ const resolvers = {
 
             return user;
         },
-
     },
     ...(process.env._HANDLER == null && {
         Subscription: {

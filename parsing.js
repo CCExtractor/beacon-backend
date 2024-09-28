@@ -51,7 +51,7 @@ function parseUserObject(userObject) {
             __v: userObject.__v,
         };
     } catch (error) {
-        console.log(error)
+        console.log(error);
     }
 
     return model;
