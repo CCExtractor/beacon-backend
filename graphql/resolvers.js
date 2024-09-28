@@ -10,7 +10,6 @@ const Landmark = require("../models/landmark.js");
 const { User } = require("../models/user.js");
 const { MongoServerError } = require("mongodb");
 const { parseBeaconObject, parseUserObject, parseLandmarkObject } = require("../parsing.js");
-const landmark = require("../models/landmark.js");
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // even if we generate 10 IDs per hour,
 // ~10 days needed, in order to have a 1% probability of at least one collision.
@@ -248,7 +247,7 @@ const resolvers = {
             );
         },
 
-        sendVerificationCode: async (_, {}, { user }) => {
+        sendVerificationCode: async (_, { user }) => {
             const min = 1000;
             const max = 9999;
 
@@ -273,14 +272,14 @@ const resolvers = {
 
             return verificationCode;
         },
-        completeVerification: async (_, {}, { user }) => {
+        completeVerification: async (_, { user }) => {
             let currentUser = await User.findById(user.id);
             currentUser.isVerified = true;
             await currentUser.save();
             return currentUser;
         },
 
-        removeMember: async (_, { groupId, memberId }, { user, pubsub }) => {
+        removeMember: async (_, { groupId, memberId }, { user }) => {
             const group = await Group.findById(groupId);
             if (!group) return new UserInputError("No group exists with this code!");
 
@@ -349,12 +348,7 @@ const resolvers = {
                     await user.save();
                     return newGroup;
                 } catch (e) {
-                    //try again only if shortcode collides.
-                    if (e instanceof MongoServerError && e.keyValue["shortcode"]) {
-                    } else {
-                        //else return the error;
-                        return new Error(e);
-                    }
+                    return new Error(e);
                 }
             }
             //if shortcode collides two times then return an error saying please try again.
@@ -640,10 +634,6 @@ const resolvers = {
 
             return user;
         },
-
-        changeLeader: async (_, { beaconID, newLeaderID }, { user }) => {
-            const beacon = await Beacon.findById(beaconID);
-        },
     },
     ...(process.env._HANDLER == null && {
         Subscription: {
@@ -713,7 +703,7 @@ const resolvers = {
                     (payload, variables, { user }) => {
                         const { groupID, groupMembers, groupLeader, groupUpdate } = payload;
 
-                        let { newBeacon, groupId, deletedBeacon, updatedBeacon, newUser } = groupUpdate;
+                        let { newBeacon, groupId, deletedBeacon, updatedBeacon } = groupUpdate;
                         if (newBeacon != null) {
                             if (newBeacon.leader._id == user.id) {
                                 // stopping to listen to the creator of beacon
