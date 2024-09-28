@@ -8,7 +8,8 @@ const locationSchema = new Schema(
         lon: String,
     },
     {
-        timestamps: true,
+        _id: false,
+        timestamps: false,
     }
 );
 

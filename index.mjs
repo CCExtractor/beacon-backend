@@ -6,7 +6,6 @@ import { ApolloServer } from "apollo-server-express";
 import { applyMiddleware } from "graphql-middleware";
 import { makeExecutableSchema } from "graphql-tools";
 import mongoose from "mongoose";
-
 import typeDefs from "./graphql/schema.js";
 import resolvers from "./graphql/resolvers.js";
 import { User } from "./models/user.js";
@@ -15,9 +14,7 @@ import pubsub from "./pubsub.js";
 
 const server = new ApolloServer({
     schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
-    // schema: makeExecutableSchema({ typeDefs, resolvers }), // to temp disable shield on dev
     context: async ({ req, connection }) => {
-        // initialize context even if it comes from subscription connection
         if (connection) {
             return { user: connection.context.user, pubsub };
         }
@@ -32,7 +29,7 @@ const server = new ApolloServer({
         onConnect: async connectionParams => {
             console.log("Client connected");
             const authorization = connectionParams["Authorization"];
-            // add user to connection context
+
             if (authorization) {
                 try {
                     const decoded = jwt.verify(authorization.replace("Bearer ", ""), process.env.JWT_SECRET);
@@ -40,6 +37,7 @@ const server = new ApolloServer({
                     const user = await User.findById(decoded.sub).populate("beacons");
                     return { user };
                 } catch (err) {
+                    console.log(err);
                     throw new Error("Invalid token!");
                 }
             }
@@ -70,12 +68,11 @@ app.get("/j/:shortcode", async (_req, res) => {
 
 server.applyMiddleware({ app });
 const httpServer = http.createServer(app);
+
 server.installSubscriptionHandlers(httpServer);
 
-const uri = process.env.DB;
-const options = { useNewUrlParser: true, useUnifiedTopology: true };
 mongoose
-    .connect(uri, options)
+    .connect(process.env.DB)
     .then(() =>
         httpServer.listen(
             { port: 4000 },
