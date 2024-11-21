@@ -27,7 +27,7 @@
     "aws-sdk": "^2.971.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.0.1",
-    "express-jwt": "^6.0.0",
+    "express-jwt": "^8.4.1",
     "geolib": "^3.3.3",
     "graphql": "^15.3.0",
     "graphql-redis-subscriptions": "^2.4.2",
