@@ -247,23 +247,25 @@ const resolvers = {
             );
         },
 
-        sendVerificationCode: async (_, { user }) => {
+        sendVerificationCode: async (_, { email }, { user }) => {
             const min = 1000;
             const max = 9999;
 
             let verificationCode = Math.floor(Math.random() * (max - min + 1)) + min;
-
+            console.log("Verification code: ", verificationCode);
             const transporter = nodemailer.createTransport({
                 service: "gmail",
                 auth: {
-                    user: process.env.EMAIL_USERNAME,
-                    pass: process.env.EMAIL_PASSWORD,
+                    user: "2021.himanshu.goyal@ves.ac.in",
+                    pass: "Kailashg739@",
                 },
             });
 
+            console.log("Sending email to: ", user, email);
+
             let mailOptions = {
                 from: "Beacon",
-                to: user.email,
+                to: email,
                 subject: `Verification code`,
                 text: `Your verification code is: 
                                        ${verificationCode}`,
@@ -272,8 +274,9 @@ const resolvers = {
 
             return verificationCode;
         },
-        completeVerification: async (_, { user }) => {
-            let currentUser = await User.findById(user.id);
+        completeVerification: async (_, { userId }, { user }) => {
+            let currentUser = await User.findById(userId);
+            console.log("Current user: ", currentUser, user);
             currentUser.isVerified = true;
             await currentUser.save();
             return currentUser;
