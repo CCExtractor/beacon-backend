@@ -208,20 +208,15 @@ const resolvers = {
         },
 
         login: async (_parent, { id, credentials }) => {
-            console.log(credentials);
-
             if (!id && !credentials) return new UserInputError("One of ID and credentials required");
 
             const { email, password } = credentials || {}; // unpack if available
-            console.log(email, password);
             const user = id ? await User.findById(id) : await User.findOne({ email });
 
             if (!user) return new Error("User not found.");
 
             // prevent third party using id to login when user registered
             if (user.email && !credentials) return new UserInputError("Email/password required to login");
-
-            console.log("User logged in: ", user, new Date());
 
             let anon = true;
 
@@ -247,21 +242,18 @@ const resolvers = {
             );
         },
 
-        sendVerificationCode: async (_, { email }, { user }) => {
+        sendVerificationCode: async (_, { email }) => {
             const min = 1000;
             const max = 9999;
 
             let verificationCode = Math.floor(Math.random() * (max - min + 1)) + min;
-            console.log("Verification code: ", verificationCode);
             const transporter = nodemailer.createTransport({
                 service: "gmail",
                 auth: {
-                    user: "2021.himanshu.goyal@ves.ac.in",
-                    pass: "Kailashg739@",
+                    user: process.env.EMAIL_USERNAME,
+                    pass: process.env.EMAIL_PASSWORD,
                 },
             });
-
-            console.log("Sending email to: ", user, email);
 
             let mailOptions = {
                 from: "Beacon",
