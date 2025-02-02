@@ -145,8 +145,8 @@ const typeDefs = gql`
         one of ID or credentials required (ID for anon)
         """
         login(id: ID, credentials: AuthPayload): String!
-        sendVerificationCode: String!
-        completeVerification: User!
+        sendVerificationCode(email: String!): String!
+        completeVerification(userId: String!): User!
         removeMember(groupId: ID!, memberId: ID!): User!
         oAuth(userInput: oAuthInput): String
         changeShortcode(groupId: ID!): Group!

@@ -208,20 +208,15 @@ const resolvers = {
         },
 
         login: async (_parent, { id, credentials }) => {
-            console.log(credentials);
-
             if (!id && !credentials) return new UserInputError("One of ID and credentials required");
 
             const { email, password } = credentials || {}; // unpack if available
-            console.log(email, password);
             const user = id ? await User.findById(id) : await User.findOne({ email });
 
             if (!user) return new Error("User not found.");
 
             // prevent third party using id to login when user registered
             if (user.email && !credentials) return new UserInputError("Email/password required to login");
-
-            console.log("User logged in: ", user, new Date());
 
             let anon = true;
 
@@ -247,12 +242,11 @@ const resolvers = {
             );
         },
 
-        sendVerificationCode: async (_, { user }) => {
+        sendVerificationCode: async (_, { email }) => {
             const min = 1000;
             const max = 9999;
 
             let verificationCode = Math.floor(Math.random() * (max - min + 1)) + min;
-
             const transporter = nodemailer.createTransport({
                 service: "gmail",
                 auth: {
@@ -263,7 +257,7 @@ const resolvers = {
 
             let mailOptions = {
                 from: "Beacon",
-                to: user.email,
+                to: email,
                 subject: `Verification code`,
                 text: `Your verification code is: 
                                        ${verificationCode}`,
@@ -272,8 +266,9 @@ const resolvers = {
 
             return verificationCode;
         },
-        completeVerification: async (_, { user }) => {
-            let currentUser = await User.findById(user.id);
+        completeVerification: async (_, { userId }, { user }) => {
+            let currentUser = await User.findById(userId);
+            console.log("Current user: ", currentUser, user);
             currentUser.isVerified = true;
             await currentUser.save();
             return currentUser;

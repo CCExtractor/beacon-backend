@@ -13,7 +13,10 @@ import { permissions } from "./permissions/index.js";
 import pubsub from "./pubsub.js";
 
 const server = new ApolloServer({
-    schema: applyMiddleware(makeExecutableSchema({ typeDefs, resolvers }), permissions),
+    schema: applyMiddleware(
+        makeExecutableSchema({ typeDefs, resolvers }),
+        permissions.generate(makeExecutableSchema({ typeDefs, resolvers }))
+    ),
     context: async ({ req, connection }) => {
         if (connection) {
             return { user: connection.context.user, pubsub };
