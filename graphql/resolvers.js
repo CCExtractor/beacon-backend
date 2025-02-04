@@ -181,7 +181,6 @@ const resolvers = {
         },
 
         oAuth: async (_parent, { userInput }) => {
-            console.log("coming here");
             const { name, email } = userInput;
             let user = await User.findOne({ email });
 
