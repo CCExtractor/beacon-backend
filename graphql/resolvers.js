@@ -298,7 +298,10 @@ const resolvers = {
             if (!group) return new UserInputError("No group exists with that id.");
             if (!group.members.includes(user.id) && group.leader != user.id)
                 return new Error("User is not a part of the group!");
-
+            const existingBeacon = await Beacon.findOne({ leader: user.id });
+            if (existingBeacon) {
+                return new Error("User cannot lead more than one hike at a time.");
+            }
             const beaconDoc = new Beacon({
                 leader: user.id,
                 shortcode: nanoid(),
@@ -418,6 +421,10 @@ const resolvers = {
             if (!beacon) return new UserInputError("No beacon exists with that shortcode.");
             if (beacon.expiresAt < Date.now()) return new Error("Beacon has expired");
             if (beacon.leader == user.id) return new Error("Already leading the beacon!");
+            const followingBeacon = await Beacon.findOne({ followers: user.id });
+            if (followingBeacon) {
+                return new Error("User cannot join more than one hike at a time.");
+            }
             for (let i = 0; i < beacon.followers.length; i++)
                 if (beacon.followers[i].id === user.id) {
                     return new Error("Already following the beacon!");
