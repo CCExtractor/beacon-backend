@@ -36,7 +36,6 @@ const server = new ApolloServer({
             if (authorization) {
                 try {
                     const decoded = jwt.verify(authorization.replace("Bearer ", ""), process.env.JWT_SECRET);
-                    console.log("decoded: ", decoded);
                     const user = await User.findById(decoded.sub).populate("beacons");
                     return { user };
                 } catch (err) {
