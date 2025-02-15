@@ -628,6 +628,72 @@ const resolvers = {
 
             return user;
         },
+
+        deleteUser: async (_, { credentials }) => {
+            try {
+                const userToDelete = await User.findOne({ email: credentials.email });
+                console.log("User to delete:", userToDelete);
+                if (!userToDelete) {
+                    throw new UserInputError("User not found");
+                }
+
+                // Verify email matches
+                if (userToDelete.email !== credentials.email) {
+                    throw new AuthenticationError("Email does not match");
+                }
+
+                // Verify password
+                const validPassword = await bcrypt.compare(credentials.password, userToDelete.password);
+                if (!validPassword) {
+                    throw new AuthenticationError("Invalid password");
+                }
+
+                // Handle groups
+                const userGroups = await Group.find({
+                    $or: [{ leader: userToDelete.id }, { members: userToDelete.id }],
+                });
+
+                for (const group of userGroups) {
+                    if (group.leader.toString() === userToDelete.id) {
+                        // If user is leader, delete the group and all its beacons
+                        const groupBeacons = await Beacon.find({ group: group._id });
+                        for (const beacon of groupBeacons) {
+                            // Delete associated landmarks
+                            await Landmark.deleteMany({ _id: { $in: beacon.landmarks } });
+                            // Remove beacon reference from all followers
+                            await User.updateMany(
+                                { _id: { $in: beacon.followers } },
+                                { $pull: { beacons: beacon._id } }
+                            );
+                        }
+                        // Delete all beacons in the group
+                        await Beacon.deleteMany({ group: group._id });
+                        // Delete the group
+                        await Group.findByIdAndDelete(group._id);
+                    } else {
+                        // If user is member, remove from group
+                        await Group.findByIdAndUpdate(group._id, { $pull: { members: userToDelete.id } });
+                    }
+                }
+
+                // Handle beacons where user is a follower
+                await Beacon.updateMany({ followers: userToDelete.id }, { $pull: { followers: userToDelete.id } });
+
+                // Delete landmarks created by user
+                await Landmark.deleteMany({ createdBy: userToDelete.id });
+
+                // Finally delete the user
+                await User.findByIdAndDelete(userToDelete.id);
+
+                return true;
+            } catch (error) {
+                console.error("Error deleting user:", error);
+                if (error instanceof AuthenticationError || error instanceof UserInputError) {
+                    throw error;
+                }
+                return false;
+            }
+        },
     },
     ...(process.env._HANDLER == null && {
         Subscription: {

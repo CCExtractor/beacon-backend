@@ -158,6 +158,7 @@ const typeDefs = gql`
         joinGroup(shortcode: String!): Group!
         deleteBeacon(id: ID!): Boolean!
         sos(id: ID!): User!
+        deleteUser(credentials: AuthPayload!): Boolean!
     }
 
     type Subscription {
