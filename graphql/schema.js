@@ -107,6 +107,7 @@ const typeDefs = gql`
         filterBeacons(id: ID!, type: String): [Beacon!]!
         me: User
         hello: String
+        landmarks(beaconID: ID!): [Landmark]!
     }
 
     input oAuthInput {
