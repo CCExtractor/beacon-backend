@@ -158,6 +158,20 @@ const resolvers = {
 
             return nearby;
         },
+        landmarks: async (_parent, { beaconID }, { user }) => {
+            const beacon = await Beacon.findById(beaconID).populate({
+                path: "landmarks",
+                populate: { path: "createdBy", select: "name email" },
+            });
+
+            if (!beacon) throw new UserInputError("No beacon exists with that ID");
+
+            if (beacon.leader.toString() !== user.id && !beacon.followers.some(follower => follower.id === user.id)) {
+                throw new AuthenticationError("user must be a part of the beacon to view landmarks");
+            }
+
+            return beacon.landmarks;
+        },
     },
 
     Mutation: {
