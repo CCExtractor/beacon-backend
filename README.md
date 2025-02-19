@@ -2,6 +2,9 @@
 
 This is the backend for the Beacon app. It is written in GraphQL using Apollo and has realtime subscriptions to share user locations with one another. A MongoDB Atlas cluster is used for databasing.
 
+## Official documentation
+https://ccextractor-beacon-docs.netlify.app/
+
 ## Live URL's (possibly outdated)
 
 - `https://beacon.aadibajpai.com`: standalone version for development and testing;
