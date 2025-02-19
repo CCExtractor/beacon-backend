@@ -5,7 +5,7 @@ This is the backend for the Beacon app. It is written in GraphQL using Apollo an
 ## Official documentation
 https://ccextractor-beacon-docs.netlify.app/
 
-the source code of documentation can be found here: https://github.com/CCExtractor/Beacon-Documentation
+The source code of documentation can be found here: https://github.com/CCExtractor/Beacon-Documentation
 
 ## Live URL's (possibly outdated)
 
